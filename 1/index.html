@@ -4,33 +4,164 @@
   <meta charset="UTF-8" />
   <title>Kahoot Portal</title>
   <style>
-    body { font-family: sans-serif; padding: 2em; max-width:600px; margin:auto }
-    #error { color: red; }
-    #protected { display: none; margin-top: 2em; }
-    .kahoot { margin-bottom: 1em; }
-    footer { margin-top:2em; font-size:0.9em; color:#555 }
+    body {
+      font-family: sans-serif;
+      padding: 2em;
+      max-width: 600px;
+      margin: auto;
+    }
+    #error {
+      color: red;
+      margin-top: 0.5em;
+    }
+    #protected {
+      display: none;
+      margin-top: 2em;
+    }
+    .kahoot {
+      margin-bottom: 1.5em;
+    }
+    .backup {
+      font-size: 0.9em;
+      color: #555;
+    }
+    #video {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 1em;
+      display: none;
+    }
+    #scan-message {
+      margin-top: 1em;
+      color: #333;
+    }
+    #qr-generator img {
+      margin-top: 1em;
+    }
+    footer {
+      margin-top: 2em;
+      font-size: 0.9em;
+      color: #555;
+    }
+    button {
+      margin-top: 0.5em;
+      margin-right: 0.5em;
+    }
   </style>
 </head>
 <body>
-  <h1>Enter Password</h1>
+
+  <h1>Enter Password or Scan QR</h1>
   <input id="pwd" type="password" placeholder="Password" />
   <button id="submit">Submit</button>
+  <button id="scanBtn">Scan QR Code</button>
   <div id="error"></div>
+
+  <div id="scan-message"></div>
+  <video id="video" playsinline></video>
+
   <div id="protected"></div>
 
+  <!-- include jsQR for fallback scanning -->
+  <script src="https://unpkg.com/jsqr"></script>
   <script>
-    // ← REPLACED AT BUILD TIME ←
-    const credentials = __U_C__;
-    const kahoots     = __K_I__;
-    const secretHtml  = `__S_H_C__`;
-    const results     = __K_R__;
+    // replace these at build time or inline your secret values here
+    const credentials = U_C;
+    const kahoots     = K_I;
+    const secretHtml  = `S_H_C`;
+    const results     = K_R;
     // ------------------------------------------------
 
-    document.getElementById('submit').addEventListener('click', () => {
-      const pwd   = document.getElementById('pwd').value;
-      const user  = credentials[pwd];
-      const err   = document.getElementById('error');
-      const cont  = document.getElementById('protected');
+    // auto-login if URL has ?pwd=
+    const params = new URLSearchParams(location.search);
+    if (params.has('pwd')) {
+      const pwd = params.get('pwd');
+      document.getElementById('pwd').value = pwd;
+      login(pwd);
+    }
+
+    document.getElementById('submit')
+      .addEventListener('click', () => login(document.getElementById('pwd').value));
+
+    document.getElementById('scanBtn')
+      .addEventListener('click', startScan);
+
+    async function startScan() {
+      const msgEl = document.getElementById('scan-message');
+      msgEl.textContent = 'Please allow camera access to scan the QR code.';
+
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' }
+        });
+      } catch (e) {
+        msgEl.textContent = 'Camera access denied or unavailable.';
+        return;
+      }
+
+      const video = document.getElementById('video');
+      video.srcObject = stream;
+      video.style.display = 'block';
+      await video.play();
+
+      // native BarcodeDetector if available
+      if ('BarcodeDetector' in window) {
+        try {
+          const detector = new BarcodeDetector({ formats: ['qr_code'] });
+          return scanWithDetector(detector, stream, video, msgEl);
+        } catch {}
+      }
+      // fallback to jsQR
+      scanWithJsQR(stream, video, msgEl);
+    }
+
+    async function scanWithDetector(detector, stream, video, msgEl) {
+      const canvas = new OffscreenCanvas(video.videoWidth, video.videoHeight);
+      const ctx    = canvas.getContext('2d');
+
+      msgEl.textContent = 'Scanning for QR code…';
+      const loop = async () => {
+        ctx.drawImage(video, 0, 0);
+        const codes = await detector.detect(canvas);
+        if (codes.length) {
+          finishScan(stream, codes[0].rawValue);
+        } else {
+          requestAnimationFrame(loop);
+        }
+      };
+      loop();
+    }
+
+    function scanWithJsQR(stream, video, msgEl) {
+      const canvas = document.createElement('canvas');
+      const ctx    = canvas.getContext('2d');
+
+      msgEl.textContent = 'Scanning for QR code…';
+      const loop = () => {
+        canvas.width  = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code      = jsQR(imageData.data, imageData.width, imageData.height);
+        if (code) {
+          finishScan(stream, code.data);
+        } else {
+          requestAnimationFrame(loop);
+        }
+      };
+      loop();
+    }
+
+    function finishScan(stream, url) {
+      stream.getTracks().forEach(t => t.stop());
+      window.location.href = url;
+    }
+
+    function login(pwd) {
+      const user = credentials[pwd];
+      const err  = document.getElementById('error');
+      const cont = document.getElementById('protected');
 
       if (!user) {
         err.textContent = 'Invalid password';
@@ -41,28 +172,45 @@
 
       let html = `<h2>Welcome, ${user.name}!</h2>`;
       html += `<h3>This Week’s Kahoots</h3>`;
-      kahoots.forEach((k,i) => {
+
+      kahoots.forEach((k, i) => {
         html += `
           <div class="kahoot">
-            <strong>Set ${i+1}:</strong><br>
+            <strong>Set ${i + 1}:</strong><br>
             <a href="${k.url}" target="_blank">Join via link</a><br>
-            PIN: <strong>${k.pin}</strong>
+            PIN: <strong>${k.pin}</strong><br>
+            <div class="backup">
+              Backup link: <a href="${k.backupUrl}" target="_blank">${k.backupUrl}</a>
+            </div>
           </div>
         `;
       });
 
-      html += '<hr>' + secretHtml;
+      html += `<hr>${secretHtml}`;
 
       const userResult = results[pwd] || {};
       html += `
         <h3>Your Score</h3>
         <p>Your score this week: <strong>${userResult.score ?? 'N/A'}</strong></p>
-        <p>Results also emailed to: <strong>${user.email}</strong></p>
+        <p>Results emailed to: <strong>${user.email}</strong></p>
+      `;
+
+      const loginUrl = `${location.origin}${location.pathname}?pwd=${encodeURIComponent(pwd)}`;
+      html += `
+        <div id="qr-generator">
+          <h3>Your Login QR Code</h3>
+          <img src="https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=${encodeURIComponent(loginUrl)}"
+               alt="Login QR Code" />
+        </div>
       `;
 
       cont.innerHTML     = html;
       cont.style.display = 'block';
-    });
+    }
   </script>
+
+  <footer>
+    &copy; 2025 KSRE Portal
+  </footer>
 </body>
 </html>
