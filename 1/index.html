@@ -2,87 +2,308 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Kahoot Portal</title>
+  <title>🔐 Clever Kahoot Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    /* … your existing styles … */
-    #video {
+    /* Basic Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #f4f7f8;
+      color: #333;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+
+    /* Login Card */
+    .card {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
       width: 100%;
       max-width: 400px;
-      margin-top: 1em;
-      border: 1px solid #ccc;
-      display: none;
+      text-align: center;
     }
-    #debug {
-      margin-top: .5em;
-      font-size: .85em;
+    .card h1 {
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
       color: #007acc;
-      white-space: pre-wrap;
-      background: #f3f3f3;
-      padding: .5em;
     }
+    .input-field {
+      width: 100%;
+      padding: 0.75rem;
+      margin: 0.5rem 0 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    .button {
+      background: #007acc;
+      color: #fff;
+      padding: 0.75rem;
+      margin: 0.5rem 0;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 1rem;
+    }
+    .button:hover {
+      background: #005fa3;
+    }
+    #error {
+      color: #d9534f;
+      margin-top: 0.5rem;
+      min-height: 1.2rem;
+    }
+
+    /* Protected Content */
+    #protected {
+      display: none;
+      margin-top: 2rem;
+      text-align: left;
+    }
+    .kahoot {
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      border: 1px solid #e1e1e1;
+      border-radius: 6px;
+      background: #fafafa;
+    }
+    .kahoot a {
+      color: #007acc;
+      text-decoration: none;
+    }
+    .kahoot a:hover {
+      text-decoration: underline;
+    }
+    .backup {
+      font-size: 0.9rem;
+      color: #555;
+      margin-top: 0.25rem;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #e1e1e1;
+      margin: 2rem 0;
+    }
+
+    /* QR & Results */
+    #qr-section {
+      text-align: center;
+      margin-top: 2rem;
+    }
+    #qr-img {
+      margin: 1rem 0;
+      width: 200px;
+      height: 200px;
+    }
+    #qr-buttons a,
+    #qr-buttons button {
+      display: inline-block;
+      margin: 0.5rem;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 4px;
+      background: #007acc;
+      color: #fff;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    #qr-buttons a:hover,
+    #qr-buttons button:hover {
+      background: #005fa3;
+    }
+    footer {
+      font-size: 0.85rem;
+      color: #555;
+      margin-top: 2rem;
+      text-align: center;
+    }
+
+    /* Video Scanner (hidden) */
+    #video { display: none; }
+    #scan-message { margin-top: 1rem; color: #555; font-size: 0.9rem; }
   </style>
-  <!-- ZXing QR reader -->
-  <script src="https://unpkg.com/@zxing/library@0.19.1"></script>
 </head>
 <body>
 
-  <!-- … your existing markup … -->
-  <button id="scanBtn">Scan QR Code</button>
-  <div id="scan-message"></div>
-  <video id="video" playsinline></video>
-  <div id="debug"></div>
+  <div class="card" id="login-card">
+    <h1>🔒 Kahoot Login</h1>
+    <input id="pwd" class="input-field" type="password" placeholder="Enter password" />
+    <button id="submit" class="button">Login</button>
+    <button id="scanBtn" class="button">Scan QR Code</button>
+    <div id="error"></div>
+    <div id="scan-message"></div>
+    <video id="video" playsinline></video>
+  </div>
 
-  <!-- your existing jsQR + build-time placeholders here -->
+  <div id="protected">
+    <!-- dynamic protected content -->
+  </div>
+
+  <!-- QR Code generator lib -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+  <!-- jsQR for fallback scanning -->
+  <script src="https://unpkg.com/jsqr"></script>
 
   <script>
-    const codeReader = new ZXing.BrowserQRCodeReader();
-    const debugEl    = document.getElementById('debug');
-    const videoEl    = document.getElementById('video');
-    const msgEl      = document.getElementById('scan-message');
+    // ← replace these at build time with your GitHub Secrets ↓
+    const credentials = U_C;
+    const kahoots     = K_I;
+    const results     = K_R;
+    // --------------------------------------------------------
 
-    document.getElementById('scanBtn').addEventListener('click', () => {
-      debugEl.textContent = '';
-      msgEl.textContent   = 'Requesting camera…';
-      videoEl.style.display = 'block';
+    const loginCard = document.getElementById('login-card');
+    const errorEl   = document.getElementById('error');
+    const protectedEl = document.getElementById('protected');
 
-      codeReader  
-        .listVideoInputDevices()
-        .then(devices => {
-          log('Cameras found: ' + devices.map(d => d.label).join(', '));
-          // pick back camera if you can
-          const backCamera = devices.find(d => /back|rear/i.test(d.label)) || devices[0];
-          log('Using device: ' + backCamera.label);
+    // auto-login if ?pwd=…
+    const params = new URLSearchParams(location.search);
+    if (params.has('pwd')) {
+      const p = params.get('pwd');
+      document.getElementById('pwd').value = p;
+      handleLogin(p);
+    }
 
-          return codeReader.decodeFromVideoDevice(
-            backCamera.deviceId,
-            'video',
-            (result, err) => {
-              if (result) {
-                log('QR detected: ' + result.getText());
-                codeReader.reset();
-                finishScan(result.getText());
-              }
-              if (err && !(err instanceof ZXing.NotFoundException)) {
-                // only log serious errors
-                log('❌ Reader error: ' + err);
-              }
-            }
-          );
-        })
-        .catch(err => {
-          log('❌ Cannot start scanner: ' + err);
-          msgEl.textContent = 'Camera start failed. Check console.';
+    document.getElementById('submit')
+      .addEventListener('click', () => handleLogin(document.getElementById('pwd').value));
+
+    document.getElementById('scanBtn')
+      .addEventListener('click', startScan);
+
+    // ===== Login =====
+    function handleLogin(pwd) {
+      const user = credentials[pwd];
+      if (!user) {
+        errorEl.textContent = 'Invalid password';
+        return;
+      }
+      errorEl.textContent = '';
+      showProtected(user, pwd);
+    }
+
+    // ===== Show Protected Content =====
+    function showProtected(user, pwd) {
+      loginCard.style.display = 'none';
+      let html = `<h2>Welcome, ${user.name}!</h2>`;
+      html += `<h3>This Week’s Kahoots</h3>`;
+
+      kahoots.forEach((k, i) => {
+        html += `
+          <div class="kahoot">
+            <strong>Set ${i+1}:</strong><br>
+            <a href="${k.url}" target="_blank">Join via link</a><br>
+            PIN: <strong>${k.pin}</strong>
+            <div class="backup">Backup link: 
+              <a href="${k.backupUrl}" target="_blank">${k.backupUrl}</a>
+            </div>
+          </div>`;
+      });
+
+      html += `<hr><h3>Your Score</h3>
+        <p><strong>${results[pwd]?.score ?? 'N/A'}</strong></p>`;
+
+      // QR Code section
+      const loginUrl = `${location.origin}${location.pathname}?pwd=${encodeURIComponent(pwd)}`;
+      html += `
+        <div id="qr-section">
+          <h3>Your Login QR Code</h3>
+          <canvas id="qr-img"></canvas>
+          <div id="qr-buttons">
+            <a id="download-link" href="#" download="kahoot-login.png">Download QR</a>
+            <button id="print-btn">Print QR</button>
+          </div>
+        </div>`;
+
+      protectedEl.innerHTML = html;
+      protectedEl.style.display = 'block';
+
+      // generate QR
+      const canvas = document.getElementById('qr-img');
+      QRCode.toCanvas(canvas, loginUrl, { width: 200 }, err => {
+        if (err) console.error(err);
+        else {
+          // set download link
+          const dl = document.getElementById('download-link');
+          dl.href = canvas.toDataURL('image/png');
+        }
+      });
+
+      document.getElementById('print-btn')
+        .addEventListener('click', () => {
+          const dataUrl = canvas.toDataURL();
+          const w = window.open('');
+          w.document.write(`<img src="${dataUrl}" onload="window.print();window.close()">`);
         });
-    });
+    }
 
-    function finishScan(url) {
+    // ===== QR Scanning =====
+    async function startScan() {
+      const msgEl = document.getElementById('scan-message');
+      msgEl.textContent = 'Please allow camera access…';
+
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      } catch (e) {
+        msgEl.textContent = 'Camera access denied or unavailable.';
+        return;
+      }
+      const video = document.getElementById('video');
+      video.srcObject = stream;
+      video.style.display = 'block';
+      await video.play();
+
+      // try BarcodeDetector
+      if ('BarcodeDetector' in window) {
+        try {
+          const det = new BarcodeDetector({ formats: ['qr_code'] });
+          return scanWithDetector(det, stream, video, msgEl);
+        } catch {}
+      }
+      scanWithJsQR(stream, video, msgEl);
+    }
+
+    async function scanWithDetector(det, stream, video, msgEl) {
+      const cnv = new OffscreenCanvas(video.videoWidth, video.videoHeight);
+      const ctx = cnv.getContext('2d');
+      msgEl.textContent = 'Scanning…';
+      const loop = async () => {
+        ctx.drawImage(video, 0, 0);
+        const codes = await det.detect(cnv);
+        if (codes.length) return finishScan(stream, codes[0].rawValue);
+        requestAnimationFrame(loop);
+      };
+      loop();
+    }
+
+    function scanWithJsQR(stream, video, msgEl) {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      msgEl.textContent = 'Scanning…';
+      const loop = () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(data.data, data.width, data.height);
+        if (code) return finishScan(stream, code.data);
+        requestAnimationFrame(loop);
+      };
+      loop();
+    }
+
+    function finishScan(stream, url) {
+      stream.getTracks().forEach(t => t.stop());
       window.location.href = url;
     }
-
-    function log(msg) {
-      console.log(msg);
-      debugEl.textContent += msg + '\n';
-    }
   </script>
+
+  <footer>&copy; 2025 KSRE Portal</footer>
 </body>
 </html>
