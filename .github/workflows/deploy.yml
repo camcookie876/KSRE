@@ -1,4 +1,5 @@
-name: Deploy KSRE Pages
+# .github/workflows/deploy.yml
+name: Deploy KSRE to GitHub Pages
 
 on:
   push:
@@ -6,16 +7,42 @@ on:
       - main
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Inject secrets into index.html
+        run: |
+          # ensure temp directory exists
+          mkdir -p temp/1
+
+          # replace placeholders with your GitHub Secrets
+          sed \
+            -e "s|U_C|${{ secrets.U_C }}|g" \
+            -e "s|K_I|${{ secrets.K_I }}|g" \
+            -e "s|S_H_C|${{ secrets.S_H_C }}|g" \
+            -e "s|K_R|${{ secrets.K_R }}|g" \
+            1/index.html > temp/1/index.html
+
+      - name: Debug: list built files
+        run: |
+          echo "====== temp directory contents ======"
+          ls -R temp
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: ./1
+          publish_branch: gh-pages       # branch that GitHub Pages will serve
+          publish_dir: ./temp/1          # directory to publish
+          user_name: github-actions[bot]                   # optional: commit author
+          user_email: github-actions[bot]@users.noreply.github.com
+          clean: true                   # remove orphan files in gh-pages
+
+      - name: Confirm deployment
+        run: |
+          echo "Your site should now be live at:"
+          echo "https://camcookie876.github.io/KSRE/1/index.html"
