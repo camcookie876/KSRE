@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kahoot Portal</title>
+  <style>
+    body { font-family: sans-serif; padding: 2em; max-width:600px; margin:auto }
+    #error { color: red; }
+    #protected { display: none; margin-top: 2em; }
+    .kahoot { margin-bottom: 1em; }
+    footer { margin-top:2em; font-size:0.9em; color:#555 }
+  </style>
+</head>
+<body>
+  <h1>Enter Password</h1>
+  <input id="pwd" type="password" placeholder="Password" />
+  <button id="submit">Submit</button>
+  <div id="error"></div>
+  <div id="protected"></div>
+
+  <script>
+    // ← REPLACED AT BUILD TIME ←
+    const credentials = __U_C__;
+    const kahoots     = __K_I__;
+    const secretHtml  = `__S_H_C__`;
+    const results     = __K_R__;
+    // ------------------------------------------------
+
+    document.getElementById('submit').addEventListener('click', () => {
+      const pwd   = document.getElementById('pwd').value;
+      const user  = credentials[pwd];
+      const err   = document.getElementById('error');
+      const cont  = document.getElementById('protected');
+
+      if (!user) {
+        err.textContent = 'Invalid password';
+        cont.style.display = 'none';
+        return;
+      }
+      err.textContent = '';
+
+      let html = `<h2>Welcome, ${user.name}!</h2>`;
+      html += `<h3>This Week’s Kahoots</h3>`;
+      kahoots.forEach((k,i) => {
+        html += `
+          <div class="kahoot">
+            <strong>Set ${i+1}:</strong><br>
+            <a href="${k.url}" target="_blank">Join via link</a><br>
+            PIN: <strong>${k.pin}</strong>
+          </div>
+        `;
+      });
+
+      html += '<hr>' + secretHtml;
+
+      const userResult = results[pwd] || {};
+      html += `
+        <h3>Your Score</h3>
+        <p>Your score this week: <strong>${userResult.score ?? 'N/A'}</strong></p>
+        <p>Results also emailed to: <strong>${user.email}</strong></p>
+      `;
+
+      cont.innerHTML     = html;
+      cont.style.display = 'block';
+    });
+  </script>
+</body>
+</html>

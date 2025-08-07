@@ -1,0 +1,30 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Prepare docs folder
+        run: mkdir -p docs/1
+
+      - name: Inject secrets into docs/1/index.html
+        run: |
+          sed \
+            -e "s|U_C|${{ secrets.U_C }}|g" \
+            -e "s|K_I|${{ secrets.K_I }}|g" \
+            -e "s|S_H_C|${{ secrets.S_H_C }}|g" \
+            -e "s|K_R|${{ secrets.K_R }}|g" \
+            1/index.html > docs/1/index.html
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
