@@ -1,21 +1,21 @@
-# .github/workflows/deploy.yml
-name: Deploy KSRE to GitHub Pages
+name: Deploy KSRE Pages
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages        # or leave default if you configured Pages to serve from gh-pages
-          publish_dir: https://camcookie876.github.io/KSRE/1/           # path to your built site
+          publish_branch: gh-pages
+          publish_dir: ./1
