@@ -2,293 +2,170 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>KSRE Portal</title>
+  <title>QR & URL → Live Webpage</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap"
+    rel="stylesheet"
+  />
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0 }
-    body {
-      background: #f4f7f8;
+    /* Base Reset */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
       color: #333;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
       display: flex;
-      flex-direction: column;
       align-items: center;
-      min-height: 100vh;
-      position: relative;
+      justify-content: center;
       padding: 1rem;
-      padding-bottom: 3rem;
     }
-    .card {
+
+    .container {
       background: #fff;
+      max-width: 700px;
+      width: 100%;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    header {
+      background: #007acc;
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    header h1 {
+      color: #fff;
+      font-weight: 400;
+      font-size: 1.75rem;
+    }
+
+    main {
       padding: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
-      width: 100%;
-      max-width: 400px;
-      text-align: center;
     }
-    .card h1 {
-      margin-bottom: 1rem;
-      font-size: 1.5rem;
-      color: #007acc;
-    }
-    .input-field {
-      width: 100%;
-      padding: .75rem;
-      margin: .5rem 0 1rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 1rem;
-    }
-    .button {
-      background: #007acc;
-      color: #fff;
-      padding: .75rem;
-      margin: .5rem 0;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      width: 100%;
-      font-size: 1rem;
-    }
-    .button:hover { background: #005fa3 }
-    #error {
-      color: #d9534f;
-      margin-top: .5rem;
-      min-height: 1.2rem;
-    }
-    #scan-message {
-      margin-top: 1rem;
-      color: #555;
-      font-size: .9rem;
-    }
-    #video { display: none; width: 100%; max-width: 400px; margin-top: 1rem }
-    #protected {
-      display: none;
-      margin-top: 2rem;
-      text-align: left;
-      width: 100%;
-      max-width: 600px;
-    }
-    .kahoot {
+
+    .controls {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
       margin-bottom: 1.5rem;
-      padding: 1rem;
-      border: 1px solid #e1e1e1;
-      border-radius: 6px;
-      background: #fafafa;
     }
-    .kahoot a {
-      color: #007acc;
-      text-decoration: none;
-    }
-    .backup {
-      font-size: .9rem;
-      color: #555;
-      margin-top: .25rem;
-    }
-    hr {
-      border: none;
-      border-top: 1px solid #e1e1e1;
-      margin: 2rem 0;
-    }
-    #qr-section { text-align: center; margin-top: 2rem }
-    #qr-img { width: 200px; height: 200px; margin: 1rem 0 }
-    #qr-buttons a, #qr-buttons button {
-      display: inline-block;
-      margin: .5rem;
-      padding: .5rem 1rem;
-      border-radius: 4px;
-      background: #007acc;
-      color: #fff;
-      text-decoration: none;
+
+    .controls input[type="file"] {
       cursor: pointer;
     }
-    #qr-buttons a:hover, #qr-buttons button:hover { background: #005fa3 }
-    footer {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
+
+    .controls button {
+      background: #007acc;
+      color: #fff;
+      border: none;
+      padding: 0.75rem 1.25rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .controls button:hover {
+      background: #005fa3;
+    }
+
+    #error {
       text-align: center;
-      font-size: .85rem;
-      color: #555;
-      padding: .5rem 0;
+      color: #d9534f;
+      margin-top: 0.5rem;
+      min-height: 1.2rem;
+      font-size: 0.9rem;
+    }
+
+    iframe {
+      width: 100%;
+      height: 500px;
+      border: none;
+      border-radius: 0 0 12px 12px;
+      box-shadow: inset 0 0 0 1px #e1e1e1;
     }
   </style>
 </head>
 <body>
-
-  <div class="card" id="login-card">
-    <h1>KSRE Portal</h1>
-    <input id="pwd" class="input-field" type="password" placeholder="Enter password" />
-    <button id="submit" class="button">Login</button>
-    <button id="scanBtn" class="button">Scan QR Code</button>
-    <div id="error"></div>
-    <div id="scan-message"></div>
-    <video id="video" playsinline></video>
+  <div class="container">
+    <header>
+      <h1>QR Code &amp; URL → Live Webpage</h1>
+    </header>
+    <main>
+      <div class="controls">
+        <input type="file" accept="image/*" id="qrInput" />
+        <button id="clearBtn">Clear Preview</button>
+      </div>
+      <iframe id="preview" sandbox="allow-scripts"></iframe>
+      <div id="error"></div>
+    </main>
   </div>
 
-  <div id="protected"></div>
+  <script type="module">
+    import jsQR from 'https://cdn.skypack.dev/jsqr';
 
-  <!-- QR generator & scanner libs -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
-  <script src="https://unpkg.com/jsqr"></script>
+    const errorEl = document.getElementById('error');
+    const iframe = document.getElementById('preview');
+    const qrInput = document.getElementById('qrInput');
+    const clearBtn = document.getElementById('clearBtn');
 
-  <script>
-    // Global error handler
-    window.addEventListener('error', e => {
-      const errEl = document.getElementById('error');
-      errEl.textContent = 'Unexpected error: ' + e.message;
+    // Render from URL
+    const params = new URLSearchParams(location.search);
+    if (params.has('code')) {
+      try {
+        const html = decodeURIComponent(params.get('code'));
+        iframe.srcdoc = html;
+      } catch (err) {
+        errorEl.textContent = 'Invalid URL code: ' + err.message;
+      }
+    }
+
+    // Clear preview
+    clearBtn.addEventListener('click', () => {
+      iframe.srcdoc = '';
+      errorEl.textContent = '';
+      qrInput.value = '';
     });
 
-    (function(){
+    // Scan QR
+    qrInput.addEventListener('change', async (e) => {
+      errorEl.textContent = '';
+      const file = e.target.files[0];
+      if (!file) return;
+
       try {
-        // ← injected at build time
-        // Define dummy data to prevent errors if not injected
-        const U_C = typeof U_C !== 'undefined' ? U_C : { "demo": { name: "Demo User" } };
-        const K_I = typeof K_I !== 'undefined' ? K_I : [ { url: "#", pin: "000000", backupUrl: "#" } ];
-        const K_R = typeof K_R !== 'undefined' ? K_R : { "demo": { score: 0 } };
+        const img = await createImageBitmap(file);
+        const canvas = new OffscreenCanvas(img.width, img.height);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const data = ctx.getImageData(0, 0, img.width, img.height);
+        const qr = jsQR(data.data, img.width, img.height);
 
-        const credentials = U_C;
-        const kahoots     = K_I;
-        const results     = K_R;
-        // -------------------------
-
-        const loginCard  = document.getElementById('login-card');
-        const errorEl    = document.getElementById('error');
-        const scanMsgEl  = document.getElementById('scan-message');
-        const videoEl    = document.getElementById('video');
-        const protectedEl= document.getElementById('protected');
-
-        // Auto-login via URL
-        const params = new URLSearchParams(location.search);
-        if (params.has('pwd')) {
-          const p = params.get('pwd');
-          document.getElementById('pwd').value = p;
-          handleLogin(p);
+        if (!qr?.data) {
+          throw new Error("No QR data found");
         }
 
-        document.getElementById('submit')
-          .addEventListener('click', () => handleLogin(document.getElementById('pwd').value));
-
-        document.getElementById('scanBtn')
-          .addEventListener('click', startScan);
-
-        function handleLogin(pwd) {
-          errorEl.textContent = '';
-          const user = credentials[pwd];
-          if (!user) {
-            return errorEl.textContent = 'Invalid password';
-          }
-          showProtected(user, pwd);
-        }
-
-        function showProtected(user, pwd) {
-          loginCard.style.display = 'none';
-          let html = `<h2>Welcome, ${user.name}!</h2>`;
-          html += `<h3>This Week’s Kahoots</h3>`;
-          kahoots.forEach((k,i) => {
-            html += `
-              <div class="kahoot">
-                <strong>Set ${i+1}:</strong><br>
-                <a href="${k.url}" target="_blank">Join via link</a><br>
-                PIN: <strong>${k.pin}</strong>
-                <div class="backup">
-                  Backup link:
-                  <a href="${k.backupUrl}" target="_blank">${k.backupUrl}</a>
-                </div>
-              </div>`;
-          });
-          html += `<hr><h3>Your Score</h3>
-                   <p><strong>${results[pwd]?.score ?? 'N/A'}</strong></p>`;
-          const loginUrl = `${location.origin}${location.pathname}?pwd=${encodeURIComponent(pwd)}`;
-          html += `
-            <div id="qr-section">
-              <h3>Your Login QR Code</h3>
-              <canvas id="qr-img"></canvas>
-              <div id="qr-buttons">
-                <a id="download-link" href="#" download="ksre-login.png">Download QR</a>
-                <button id="print-btn">Print QR</button>
-              </div>
-            </div>`;
-          protectedEl.innerHTML = html;
-          protectedEl.style.display = 'block';
-
-          // generate & attach QR
-          const canvas = document.getElementById('qr-img');
-          QRCode.toCanvas(canvas, loginUrl, { width:200 }, err=>{
-            if(err) errorEl.textContent = 'QR generation error';
-            else document.getElementById('download-link').href = canvas.toDataURL();
-          });
-          document.getElementById('print-btn')
-            .addEventListener('click', ()=>{
-              const w = window.open('');
-              w.document.write(`<img src="${canvas.toDataURL()}" onload="window.print();window.close()">`);
-            });
-        }
-
-        async function startScan() {
-          scanMsgEl.textContent = 'Allow camera access…';
-          let stream;
-          try {
-            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'environment' }});
-          } catch {
-            return scanMsgEl.textContent = 'Camera access denied or unavailable.';
-          }
-          videoEl.srcObject = stream;
-          videoEl.style.display = 'block';
-          await videoEl.play();
-
-          // try native detector
-          if ('BarcodeDetector' in window) {
-            try {
-              const det = new BarcodeDetector({ formats:['qr_code'] });
-              return scanWithDetector(det, stream, videoEl);
-            } catch{}
-          }
-          scanWithJsQR(stream, videoEl);
-        }
-
-        async function scanWithDetector(det, stream, video) {
-          const cnv = new OffscreenCanvas(video.videoWidth, video.videoHeight);
-          const ctx = cnv.getContext('2d');
-          scanMsgEl.textContent = 'Scanning…';
-          const loop = async ()=>{
-            ctx.drawImage(video,0,0);
-            const codes = await det.detect(cnv);
-            if (codes.length) return finishScan(stream, codes[0].rawValue);
-            requestAnimationFrame(loop);
-          };
-          loop();
-        }
-
-        function scanWithJsQR(stream, video) {
-          const canvas = document.createElement('canvas');
-          const ctx    = canvas.getContext('2d');
-          scanMsgEl.textContent = 'Scanning…';
-          const loop = ()=>{
-            canvas.width  = video.videoWidth;
-            canvas.height = video.videoHeight;
-            ctx.drawImage(video,0,0);
-            const img = ctx.getImageData(0,0,canvas.width,canvas.height);
-            const code = jsQR(img.data, img.width, img.height);
-            if (code) return finishScan(stream, code.data);
-            requestAnimationFrame(loop);
-          };
-          loop();
-        }
-
-        function finishScan(stream, url) {
-          stream.getTracks().forEach(t=>t.stop());
-          window.location.href = url;
-        }
-
-      } catch(e) {
-        document.getElementById('error').textContent = 'Initialization error: ' + e.message;
+        const html = decodeURIComponent(qr.data);
+        iframe.srcdoc = html;
+      } catch (err) {
+        errorEl.textContent = 'Scan error: ' + err.message;
       }
-    })();
+    });
   </script>
-
-  <footer>© 2025 KSRE Portal</footer>
 </body>
 </html>
