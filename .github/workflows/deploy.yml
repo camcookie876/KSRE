@@ -9,15 +9,21 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    fail-fast: false
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
       - name: Inject secrets into index.html
         run: |
           # ensure temp directory exists
           mkdir -p temp/1
+
+          # check if source file exists
+          if [ ! -f 1/index.html ]; then
+            echo "Error: 1/index.html does not exist."
+            exit 1
+          fi
 
           # replace placeholders with your GitHub Secrets
           sed \
@@ -25,6 +31,7 @@ jobs:
             -e "s|K_I|${{ secrets.K_I }}|g" \
             -e "s|S_H_C|${{ secrets.S_H_C }}|g" \
             -e "s|K_R|${{ secrets.K_R }}|g" \
+            1/index.html > temp/1/index.html
             1/index.html > temp/1/index.html
 
       - name: Debug: list built files

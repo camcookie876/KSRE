@@ -144,6 +144,11 @@
     (function(){
       try {
         // ← injected at build time
+        // Define dummy data to prevent errors if not injected
+        const U_C = typeof U_C !== 'undefined' ? U_C : { "demo": { name: "Demo User" } };
+        const K_I = typeof K_I !== 'undefined' ? K_I : [ { url: "#", pin: "000000", backupUrl: "#" } ];
+        const K_R = typeof K_R !== 'undefined' ? K_R : { "demo": { score: 0 } };
+
         const credentials = U_C;
         const kahoots     = K_I;
         const results     = K_R;
