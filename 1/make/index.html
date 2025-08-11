@@ -2,18 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Camcookie Code Maker</title>
+  <title>Camcookie QR Maker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
-      --accent: #ff5c5c;
+      --accent: #5cffe1;
       --bg: #121212;
       --fg: #f0f0f0;
       --card: #1f1f1f;
-      --input-bg: #2a2a2a;
+      --qr-bg: #ffffff;
+      --qr-fg: #000000;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0 }
     body {
+      margin: 0;
       font-family: 'Segoe UI', sans-serif;
       background: var(--bg);
       color: var(--fg);
@@ -21,288 +22,127 @@
       flex-direction: column;
       align-items: center;
       padding: 2rem;
-      min-height: 100vh;
+      gap: 2rem;
     }
-    h1 {
-      color: var(--accent);
-      margin-bottom: 1rem;
-      font-size: 2rem;
-    }
-    textarea {
-      width: 100%;
-      max-width: 800px;
-      height: 180px;
-      background: var(--input-bg);
-      color: var(--fg);
-      border: none;
-      border-radius: 8px;
+    textarea, input {
+      width: 90%;
+      max-width: 600px;
       padding: 1rem;
-      font-family: monospace;
-      font-size: 0.95rem;
-      resize: vertical;
-      transition: box-shadow 0.3s ease;
-    }
-    textarea:focus {
-      outline: none;
-      box-shadow: 0 0 0 2px var(--accent);
-    }
-    #options {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 1rem;
-      max-width: 800px;
-      width: 100%;
-      margin: 1rem 0;
-    }
-    #options label {
-      display: flex;
-      flex-direction: column;
-      font-size: 0.9rem;
-      color: #ccc;
-    }
-    #options input[type="number"],
-    #options select,
-    #options input[type="color"],
-    #options input[type="file"] {
-      margin-top: 0.25rem;
-      padding: 0.4rem;
+      border-radius: 8px;
       border: none;
-      border-radius: 6px;
-      background: var(--input-bg);
+      background: var(--card);
       color: var(--fg);
-      font-size: 0.95rem;
+      font-size: 1rem;
+      resize: vertical;
     }
-    .buttons {
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin-bottom: 1rem;
-    }
+    textarea { height: 200px; }
     button {
       background: var(--accent);
-      color: #fff;
+      color: #000;
       border: none;
-      padding: 0.6rem 1.2rem;
-      border-radius: 8px;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background 0.2s ease, transform 0.2s ease;
-    }
-    button:hover {
-      background: #e04b4b;
-      transform: scale(1.05);
-    }
-    #linkBox {
-      max-width: 800px;
-      width: 100%;
-      background: var(--card);
-      padding: 0.75rem;
-      border-radius: 6px;
-      word-break: break-all;
-      opacity: 0;
-      transform: translateY(20px);
-      transition: opacity 0.5s ease, transform 0.5s ease;
-    }
-    #linkBox.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    #qrWrapper {
-      margin: 1rem 0;
-      opacity: 0;
-      transition: opacity 0.5s ease;
-    }
-    #qrWrapper.visible {
-      opacity: 1;
-    }
-    iframe {
-      width: 100%;
-      max-width: 800px;
-      height: 260px;
-      border: none;
-      border-radius: 8px;
-      background: #fff;
-      margin-top: 1rem;
-      opacity: 0;
-      transition: opacity 0.5s ease;
-    }
-    iframe.visible {
-      opacity: 1;
-    }
-    #message {
-      position: fixed;
-      bottom: 2rem;
-      left: 50%;
-      transform: translateX(-50%) scale(0.9);
-      background: var(--accent);
-      color: #fff;
       padding: 0.75rem 1.25rem;
       border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-      opacity: 0;
-      transition: opacity 0.4s ease, transform 0.4s ease;
-      pointer-events: none;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.2s ease;
+      font-weight: bold;
     }
-    #message.visible {
-      opacity: 1;
-      transform: translateX(-50%) scale(1);
+    button:hover {
+      background: #4eeed1;
+      transform: scale(1.05);
+    }
+    #qrCanvas {
+      background: var(--qr-bg);
+      padding: 1rem;
+      border-radius: 8px;
+    }
+    #link {
+      font-size: 0.95rem;
+      word-break: break-word;
+      text-align: center;
+      max-width: 90%;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      justify-content: center;
+    }
+    label {
+      font-size: 0.9rem;
+      margin-top: -1rem;
     }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
 </head>
 <body>
-  <h1>Camcookie Code Maker</h1>
-  <textarea id="codeInput" placeholder="Paste your HTML/JS code here..."></textarea>
 
-  <div id="options">
-    <label>QR Size
-      <input type="number" id="qrSize" min="100" max="800" value="200" />
-    </label>
-    <label>Margin
-      <input type="number" id="qrMargin" min="0" max="20" value="4" />
-    </label>
-    <label>Dark Color
-      <input type="color" id="qrDark" value="#ff5c5c" />
-    </label>
-    <label>Light Color
-      <input type="color" id="qrLight" value="#1f1f1f" />
-    </label>
-    <label>Error Corr.
-      <select id="qrECC">
-        <option value="L">L – 7%</option>
-        <option value="M" selected>M – 15%</option>
-        <option value="Q">Q – 25%</option>
-        <option value="H">H – 30%</option>
+  <h1>Camcookie QR Maker</h1>
+  <textarea id="htmlInput" placeholder="Paste your HTML here…"></textarea>
+
+  <div class="row">
+    <div>
+      <label for="fgColor">QR Foreground</label>
+      <input id="fgColor" type="color" value="#000000">
+    </div>
+    <div>
+      <label for="bgColor">QR Background</label>
+      <input id="bgColor" type="color" value="#ffffff">
+    </div>
+    <div>
+      <label for="ecLevel">Error Correction</label>
+      <select id="ecLevel">
+        <option value="L">Low</option>
+        <option value="M">Medium</option>
+        <option value="Q">Quartile</option>
+        <option value="H" selected>High</option>
       </select>
-    </label>
-    <label>Edge Style
-      <select id="qrStyle">
-        <option value="square">Square</option>
-        <option value="dots">Dots</option>
-        <option value="rounded">Rounded</option>
-      </select>
-    </label>
-    <label>Upload Logo
-      <input type="file" id="logoUpload" accept="image/*" />
-    </label>
+    </div>
   </div>
 
-  <div class="buttons">
-    <button id="generateBtn">Generate</button>
-    <button id="copyBtn">Copy Link</button>
-    <button id="downloadBtn">Download QR</button>
-  </div>
+  <button id="generateBtn">Generate QR + Link</button>
 
-  <div id="linkBox"></div>
-  <div id="qrWrapper"></div>
-  <iframe id="preview" sandbox="allow-scripts"></iframe>
-  <div id="message"></div>
+  <div id="link"></div>
+  <canvas id="qrCanvas" width="256" height="256"></canvas>
 
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
   <script>
-    const codeInput    = document.getElementById('codeInput');
-    const sizeInput    = document.getElementById('qrSize');
-    const marginInput  = document.getElementById('qrMargin');
-    const darkInput    = document.getElementById('qrDark');
-    const lightInput   = document.getElementById('qrLight');
-    const eccSelect    = document.getElementById('qrECC');
-    const qrStyle      = document.getElementById('qrStyle');
-    const logoUpload   = document.getElementById('logoUpload');
+    const htmlInput = document.getElementById('htmlInput');
+    const fgColor = document.getElementById('fgColor');
+    const bgColor = document.getElementById('bgColor');
+    const ecLevel = document.getElementById('ecLevel');
+    const generateBtn = document.getElementById('generateBtn');
+    const linkDisplay = document.getElementById('link');
+    const canvas = document.getElementById('qrCanvas');
+    const ctx = canvas.getContext('2d');
 
-    const generateBtn  = document.getElementById('generateBtn');
-    const copyBtn      = document.getElementById('copyBtn');
-    const downloadBtn  = document.getElementById('downloadBtn');
+    generateBtn.onclick = () => {
+      const html = htmlInput.value.trim();
+      if (!html) return;
 
-    const linkBox      = document.getElementById('linkBox');
-    const qrWrapper    = document.getElementById('qrWrapper');
-    const preview      = document.getElementById('preview');
-    const message      = document.getElementById('message');
+      // Encode payload
+      const encoded = btoa(unescape(encodeURIComponent(html)));
+      const fullLink = `https://camcookie.github.io/MINI/1/view/#code=${encoded}`;
 
-    let qr; // QRCodeStyling instance
+      linkDisplay.textContent = fullLink;
 
-    function showMsg(text) {
-      message.textContent = text;
-      message.classList.add('visible');
-      setTimeout(() => message.classList.remove('visible'), 3000);
-    }
+      // Generate QR
+      const qr = qrcode(0, ecLevel.value);
+      qr.addData(fullLink);
+      qr.make();
 
-    function generateAll() {
-      const raw = codeInput.value.trim();
-      if (!raw) return showMsg('Please enter some code.');
-      const encoded = encodeURIComponent(raw);
-      const url = `${location.origin}/MINI/1/view/?code=${encoded}`;
+      const tileW = canvas.width / qr.getModuleCount();
+      const tileH = canvas.height / qr.getModuleCount();
 
-      linkBox.textContent = url;
-      linkBox.classList.add('visible');
+      ctx.fillStyle = bgColor.value;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      preview.srcdoc = raw;
-      preview.classList.add('visible');
-
-      // Build QRCodeStyling config
-      qr = new QRCodeStyling({
-        width: Number(sizeInput.value),
-        height: Number(sizeInput.value),
-        data: url,
-        margin: Number(marginInput.value),
-        dotsOptions: {
-          type: qrStyle.value,
-          color: darkInput.value
-        },
-        backgroundOptions: {
-          color: lightInput.value
-        },
-        imageOptions: {
-          crossOrigin: "anonymous",
-          margin: 4,
-          imageSize: 0.25
-        },
-        qrOptions: {
-          errorCorrectionLevel: eccSelect.value
+      for (let row = 0; row < qr.getModuleCount(); row++) {
+        for (let col = 0; col < qr.getModuleCount(); col++) {
+          ctx.fillStyle = qr.isDark(row, col) ? fgColor.value : bgColor.value;
+          ctx.fillRect(col * tileW, row * tileH, tileW, tileH);
         }
-      });
-
-      qrWrapper.innerHTML = '';
-      qr.append(qrWrapper);
-      qrWrapper.classList.add('visible');
-    }
-
-    // Generate button
-    generateBtn.addEventListener('click', generateAll);
-
-    // Copy link
-    copyBtn.addEventListener('click', () => {
-      const txt = linkBox.textContent;
-      if (!txt) return showMsg('Nothing to copy.');
-      navigator.clipboard.writeText(txt)
-        .then(() => showMsg('Link copied.'))
-        .catch(() => showMsg('Copy failed.'));
-    });
-
-    // Download QR
-    downloadBtn.addEventListener('click', () => {
-      if (!qr) return showMsg('Nothing to download.');
-      qr.download({ name: 'camcookie-qr', extension: 'png' });
-    });
-
-    // Edge style change live
-    qrStyle.addEventListener('change', () => {
-      if (!qr) return;
-      qr.update({ dotsOptions: { type: qrStyle.value } });
-      qr.append(qrWrapper);
-    });
-
-    // Logo upload
-    logoUpload.addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (!file || !qr) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        qr.update({ image: reader.result });
-        qr.append(qrWrapper);
-        showMsg('Logo added.');
-      };
-      reader.readAsDataURL(file);
-    });
+      }
+    };
   </script>
 </body>
 </html>
