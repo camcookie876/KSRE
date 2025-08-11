@@ -1,19 +1,28 @@
+<!-- Filename: /MINI/view/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Camcookie — MINI/view</title>
+  <title>View Page - Camcookie MINI</title>
   <meta name="color-scheme" content="light only" />
+  <meta id="meta-theme" name="theme-color" content="#0ea5e9" />
   <style>
     :root{
       --bg:#f7f7f8; --card:#ffffff; --text:#1f2937; --muted:#6b7280;
       --accent:#0ea5e9; --accent-2:#22c55e; --danger:#ef4444;
-      --warn-bg:#fff3cd; --warn-border:#ffc107;
-      --border:#e5e7eb; --shadow:0 10px 24px rgba(0,0,0,.06);
-      --good:#16a34a;
+      --warn-bg:#fff3cd; --warn-border:#ffc107; --border:#e5e7eb;
+      --shadow:0 10px 24px rgba(0,0,0,.06); --good:#16a34a;
+      --overlay: rgba(0,0,0,.62);
     }
-    *{ box-sizing:border-box; }
+    /* Themes */
+    [data-theme="blue"]  { --bg:#f7f7f8; --card:#ffffff; --text:#1f2937; --muted:#6b7280; --accent:#0ea5e9; --accent-2:#22c55e; }
+    [data-theme="green"] { --bg:#eefbf4; --card:#ffffff; --text:#1f2937; --muted:#6b7280; --accent:#22c55e; --accent-2:#16a34a; }
+    [data-theme="pink"]  { --bg:#fff1f5; --card:#ffffff; --text:#1f2937; --muted:#6b7280; --accent:#ec4899; --accent-2:#f472b6; }
+    [data-theme="sunset"]{ --bg:#fff7ed; --card:#ffffff; --text:#1f2937; --muted:#6b7280; --accent:#fb923c; --accent-2:#facc15; }
+    [data-theme="slate"] { --bg:#f1f5f9; --card:#ffffff; --text:#1f2937; --muted:#6b7280; --accent:#64748b; --accent-2:#94a3b8; }
+    [data-theme="cyber"] { --bg:#0f172a; --card:#1e293b; --text:#f1f5f9; --muted:#94a3b8; --accent:#38bdf8; --accent-2:#22d3ee; --overlay: rgba(0,8,20,.74); }
+
     html,body{ margin:0; background:var(--bg); color:var(--text); font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
     .wrap{ max-width:1100px; margin:28px auto 96px; padding:0 16px; }
     header{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
@@ -33,7 +42,7 @@
     .btn:active{ transform:translateY(1px); }
     .btn.secondary{ background:#e5e7eb; color:#111827; }
     .btn.ghost{ background:transparent; color:#111827; border:1px solid var(--border); }
-    .btn.danger{ background:#fee2e2; color:#b91c1c; }
+    [data-theme="cyber"] .btn.ghost{ color:#f1f5f9; border-color:#263347; }
     .btn[disabled]{ opacity:.5; cursor:not-allowed; }
     .grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); gap:14px; margin-top:14px; }
     .card{
@@ -59,6 +68,8 @@
       border:1px solid #fecaca; background:#fff1f2; color:#991b1b;
     }
     .footer{ margin-top:18px; color:var(--muted); font-size:.92rem; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .small{ font-size:.92rem; }
+    .divider{ height:1px; background:var(--border); margin:12px 0; }
     /* Scanner */
     .scanWrap{
       background:var(--card); border-radius:12px; border:1px solid rgba(0,0,0,.06); box-shadow:var(--shadow);
@@ -66,43 +77,101 @@
     }
     .scanBox{ width:100%; max-width:520px; margin:12px auto; }
     #reader{ border-radius:12px; overflow:hidden; }
-    .small{ font-size:.92rem; }
-    .divider{ height:1px; background:var(--border); margin:12px 0; }
-    /* Utilities */
-    .right{ margin-left:auto; }
+    /* Fullscreen viewer */
+    #viewer{ position:fixed; inset:0; z-index:100; display:none; }
+    #viewer.show{ display:block; animation:fadeIn .22s ease; }
+    #viewer .backdrop{ position:absolute; inset:0; background:var(--overlay); }
+    #viewer .chrome{
+      position:absolute; inset:10px; border-radius:14px; overflow:hidden; display:flex; flex-direction:column; background:var(--card);
+      box-shadow:0 30px 80px rgba(0,0,0,.35), 0 0 0 2px rgba(0,0,0,.06);
+      border:1px solid rgba(0,0,0,.08);
+    }
+    #viewer .topbar{
+      display:flex; align-items:center; gap:8px; padding:10px 12px; background:linear-gradient(90deg, var(--accent), var(--accent-2));
+      color:white;
+    }
+    #viewer .title{ font-weight:700; }
+    #viewer .spacer{ flex:1 1 auto; }
+    #viewer iframe{ flex:1 1 auto; width:100%; border:0; background:#fff; }
+    #viewer .exit{
+      background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.35); color:#fff; backdrop-filter: blur(4px);
+      padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:700;
+    }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
   </style>
-  <!-- QR scanning library -->
   <script src="https://unpkg.com/html5-qrcode@2.3.9/html5-qrcode.min.js"></script>
 </head>
 <body>
   <div class="wrap" id="app" aria-live="polite"></div>
   <div id="toast" class="toast" role="status" aria-live="polite">OK.</div>
 
+  <!-- Fullscreen viewer overlay -->
+  <div id="viewer" aria-hidden="true">
+    <div class="backdrop"></div>
+    <div class="chrome" role="dialog" aria-modal="true" aria-label="Embedded viewer">
+      <div class="topbar">
+        <div class="title" id="viewerTitle">Loading…</div>
+        <div class="spacer"></div>
+        <button class="exit" id="viewerExit" title="Exit (Esc)">Exit</button>
+      </div>
+      <iframe id="viewerFrame" title="Embedded content" allow="fullscreen; clipboard-read; clipboard-write" referrerpolicy="no-referrer"></iframe>
+    </div>
+  </div>
+
   <script>
     (function(){
+      // ---------- Theme handling ----------
+      const COLOR_THEMES = ['blue','green','pink','sunset','slate','cyber'];
+      const THEME_STORAGE_KEY = 'camcookie_theme';
+      const metaTheme = document.getElementById('meta-theme');
+
+      function hexFromCssVar(name){
+        const val = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        // Accept rgb(...) or hex; normalize to hex-ish where possible
+        if (val.startsWith('#')) return val;
+        const m = val.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+        if (m){ const r=Number(m[1]).toString(16).padStart(2,'0'), g=Number(m[2]).toString(16).padStart(2,'0'), b=Number(m[3]).toString(16).padStart(2,'0'); return '#' + r + g + b; }
+        return val || '#0ea5e9';
+      }
+      function applyTheme(name){
+        const next = COLOR_THEMES.includes(name) ? name : 'blue';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem(THEME_STORAGE_KEY, next);
+        const accentHex = hexFromCssVar('--accent');
+        metaTheme.setAttribute('content', accentHex);
+        // Sync viewer chrome if open
+        updateViewerChromeTheme(next, accentHex);
+      }
+      function loadTheme(){
+        applyTheme(localStorage.getItem(THEME_STORAGE_KEY) || 'blue');
+      }
+      document.addEventListener('keydown', (e)=>{
+        if (e.ctrlKey && e.shiftKey && e.code === 'KeyC'){
+          const cur = document.documentElement.getAttribute('data-theme') || 'blue';
+          const idx = (COLOR_THEMES.indexOf(cur) + 1) % COLOR_THEMES.length;
+          applyTheme(COLOR_THEMES[idx]);
+        }
+        if (e.code === 'Escape') closeViewer();
+      });
+      loadTheme();
+
+      // ---------- Utilities ----------
       const app = document.getElementById('app');
       const toast = document.getElementById('toast');
-
-      // Utilities
       const qs = new URLSearchParams(location.search);
       const hasQuery = Array.from(qs.keys()).length > 0;
-
-      const clamp = (n,a,b)=>Math.max(a,Math.min(b,n));
-      const safe = s => (s==null?'':String(s));
+      const todayDateOnly = ()=> new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+      const dateOnlyFromParam = (yyyy_mm_dd)=> {
+        if (!yyyy_mm_dd) return null;
+        const [y,m,d] = yyyy_mm_dd.split('-').map(Number);
+        if (!y||!m||!d) return null;
+        return new Date(y, m-1, d);
+      };
       const fmtDateLong = (yyyy_mm_dd)=>{
         if (!yyyy_mm_dd) return '—';
         const [y,m,d] = yyyy_mm_dd.split('-').map(Number);
         const dt = new Date(y, (m||1)-1, d||1);
         return dt.toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
-      };
-      const todayDateOnly = ()=> {
-        const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate());
-      };
-      const dateOnlyFromParam = (yyyy_mm_dd)=>{
-        if (!yyyy_mm_dd) return null;
-        const [y,m,d] = yyyy_mm_dd.split('-').map(Number);
-        if (!y || !m || !d) return null;
-        return new Date(y, m-1, d);
       };
       const showToast = (msg, ms=1800)=>{
         toast.textContent = msg;
@@ -111,7 +180,6 @@
         showToast._t = setTimeout(()=>toast.classList.remove('show'), ms);
       };
       const copyText = async (text)=>{ try{ await navigator.clipboard.writeText(text); showToast('Copied.'); }catch{} };
-      const openSafe = (url)=>window.open(url, '_blank', 'noopener');
 
       // Parse k params: each is encodeURIComponent(title)|encodeURIComponent(pin)|encodeURIComponent(url)
       function parseItems(){
@@ -126,34 +194,103 @@
             const pin   = decodeURIComponent(parts[1] || '');
             const url   = decodeURIComponent(parts[2] || '');
             if (title || pin || url) items.push({ title, pin, url });
-          }catch(_e){ /* ignore malformed */ }
+          }catch{}
         }
         return items;
       }
 
+      // ---------- Viewer overlay ----------
+      const viewer = document.getElementById('viewer');
+      const viewerTitle = document.getElementById('viewerTitle');
+      const viewerExit = document.getElementById('viewerExit');
+      const viewerFrame = document.getElementById('viewerFrame');
+
+      viewerExit.addEventListener('click', closeViewer);
+      viewer.addEventListener('click', (e)=>{ if (e.target === viewer || e.target.classList.contains('backdrop')) closeViewer(); });
+
+      function sanitizeUrl(raw){
+        const trimmed = String(raw||'').trim();
+        if (!trimmed) return '';
+        const withProto = /^(https?:)?\/\//i.test(trimmed) ? trimmed : ('https://' + trimmed);
+        try{
+          const u = new URL(withProto);
+          if (!/^https?$/i.test(u.protocol.replace(':',''))) return '';
+          return u.toString();
+        }catch{ return ''; }
+      }
+
+      function appendThemeParams(u){
+        try{
+          const url = new URL(u);
+          const theme = document.documentElement.getAttribute('data-theme') || 'blue';
+          const accent = hexFromCssVar('--accent').replace('#','');
+          const bg = hexFromCssVar('--bg').replace('#','');
+          const text = hexFromCssVar('--text').replace('#','');
+          url.searchParams.set('cam_theme', theme);
+          url.searchParams.set('cam_accent', accent);
+          url.searchParams.set('cam_bg', bg);
+          url.searchParams.set('cam_text', text);
+          return url.toString();
+        }catch{ return u; }
+      }
+
+      function tryApplyThemeInsideFrame(){
+        // Only possible for same-origin modules
+        try{
+          const doc = viewerFrame.contentDocument || viewerFrame.contentWindow.document;
+          if (!doc) return;
+          doc.documentElement.setAttribute('data-theme', document.documentElement.getAttribute('data-theme') || 'blue');
+          const style = doc.documentElement.style;
+          style.setProperty('--accent', getComputedStyle(document.documentElement).getPropertyValue('--accent'));
+          style.setProperty('--accent-2', getComputedStyle(document.documentElement).getPropertyValue('--accent-2'));
+          style.setProperty('--bg', getComputedStyle(document.documentElement).getPropertyValue('--bg'));
+          style.setProperty('--text', getComputedStyle(document.documentElement).getPropertyValue('--text'));
+          style.setProperty('--muted', getComputedStyle(document.documentElement).getPropertyValue('--muted'));
+        }catch{
+          // Cross-origin: cannot inject. We already themed the chrome and passed params.
+        }
+      }
+
+      function updateViewerChromeTheme(themeName, accentHex){
+        // Topbar already uses CSS vars; nothing to do other than maybe update meta tag (done in applyTheme)
+        // Could add theme-specific tweaks here if needed.
+      }
+
+      function openInlineViewer(rawUrl){
+        const safeUrl = sanitizeUrl(rawUrl);
+        if (!safeUrl) return showToast('Invalid link.');
+        const themedUrl = appendThemeParams(safeUrl);
+        try{
+          viewerTitle.textContent = (new URL(themedUrl)).hostname;
+        }catch{
+          viewerTitle.textContent = 'Loading…';
+        }
+        viewerFrame.src = themedUrl;
+        viewer.classList.add('show');
+        viewer.setAttribute('aria-hidden', 'false');
+        // Attempt theme injection for same-origin on load
+        viewerFrame.onload = tryApplyThemeInsideFrame;
+      }
+      function closeViewer(){
+        if (!viewer.classList.contains('show')) return;
+        viewer.classList.remove('show');
+        viewer.setAttribute('aria-hidden', 'true');
+        // Clear src to stop audio/video
+        viewerFrame.src = '';
+      }
+
+      // ---------- UI builders ----------
       function renderHeader({from, exp, count, expired}){
         const header = document.createElement('header');
-
         const left = document.createElement('div');
-        const h1 = document.createElement('h1');
-        h1.textContent = 'Camcookie — MINI/view';
+        const h1 = document.createElement('h1'); h1.textContent = 'Camcookie — MINI/view';
         left.appendChild(h1);
 
-        const right = document.createElement('div');
-        right.className = 'actions';
-
-        const src = document.createElement('span');
-        src.className = 'badge';
-        src.textContent = 'From: ' + (from || '—');
-
-        const expBadge = document.createElement('span');
-        expBadge.className = 'badge ' + (expired ? 'exp' : 'good');
+        const right = document.createElement('div'); right.className = 'actions';
+        const src = document.createElement('span'); src.className = 'badge'; src.textContent = 'From: ' + (from || '—');
+        const expBadge = document.createElement('span'); expBadge.className = 'badge ' + (expired ? 'exp' : 'good');
         expBadge.textContent = expired ? ('Expired: ' + fmtDateLong(exp||'')) : ('Expires: ' + fmtDateLong(exp||'—'));
-
-        const cnt = document.createElement('span');
-        cnt.className = 'badge';
-        cnt.textContent = (count||0) + ' item' + ((count||0)===1?'':'s');
-
+        const cnt = document.createElement('span'); cnt.className = 'badge'; cnt.textContent = (count||0) + ' item' + ((count||0)===1?'':'s');
         right.append(src, expBadge, cnt);
 
         header.append(left, right);
@@ -171,52 +308,33 @@
           title.className = 'title';
           title.textContent = it.title || ('Item ' + (i+1));
 
-          const row1 = document.createElement('div');
-          row1.className = 'row';
+          const row1 = document.createElement('div'); row1.className = 'row';
+          const pin = document.createElement('div'); pin.className = 'pin';
+          pin.innerHTML = '<strong>PIN:</strong> <span>' + (String(it.pin||'—')) + '</span>';
 
-          const pin = document.createElement('div');
-          pin.className = 'pin';
-          pin.innerHTML = '<strong>PIN:</strong> <span>' + (safe(it.pin)||'—') + '</span>';
-
-          const copyPinBtn = document.createElement('button');
-          copyPinBtn.className = 'btn ghost';
-          copyPinBtn.textContent = 'Copy PIN';
+          const copyPinBtn = document.createElement('button'); copyPinBtn.className = 'btn ghost'; copyPinBtn.textContent = 'Copy PIN';
           copyPinBtn.addEventListener('click', ()=> copyText(String(it.pin||'')));
 
           row1.append(pin, copyPinBtn);
 
-          const row2 = document.createElement('div');
-          row2.className = 'row';
+          const row2 = document.createElement('div'); row2.className = 'row';
 
-          const openBtn = document.createElement('button');
-          openBtn.className = 'btn';
-          openBtn.textContent = 'Open link';
-          openBtn.addEventListener('click', ()=> openSafe(it.url));
+          const openBtn = document.createElement('button'); openBtn.className = 'btn'; openBtn.textContent = 'Open link';
+          openBtn.addEventListener('click', ()=> openInlineViewer(it.url));
 
-          const copyLinkBtn = document.createElement('button');
-          copyLinkBtn.className = 'btn secondary';
-          copyLinkBtn.textContent = 'Copy link';
+          const copyLinkBtn = document.createElement('button'); copyLinkBtn.className = 'btn secondary'; copyLinkBtn.textContent = 'Copy link';
           copyLinkBtn.addEventListener('click', ()=> copyText(String(it.url||'')));
 
-          const copyAllBtn = document.createElement('button');
-          copyAllBtn.className = 'btn ghost';
-          copyAllBtn.textContent = 'Copy title+PIN';
-          copyAllBtn.addEventListener('click', ()=>{
-            const line = `${it.title} — PIN: ${it.pin}`;
-            copyText(line);
-          });
+          const copyAllBtn = document.createElement('button'); copyAllBtn.className = 'btn ghost'; copyAllBtn.textContent = 'Copy title+PIN';
+          copyAllBtn.addEventListener('click', ()=> copyText(`${it.title} — PIN: ${it.pin}`));
 
           if (!it.url) openBtn.disabled = true;
-          if (expired) {
-            openBtn.disabled = true;
-            card.classList.add('expired');
-          }
+          if (expired) { openBtn.disabled = true; card.classList.add('expired'); }
 
           row2.append(openBtn, copyLinkBtn, copyAllBtn);
 
-          const note = document.createElement('div');
-          note.className = 'muted small';
-          note.textContent = (new URL(it.url, location.href)).hostname || '—';
+          const note = document.createElement('div'); note.className = 'muted small';
+          try{ note.textContent = (new URL(it.url)).hostname; }catch{ note.textContent = '—'; }
 
           card.append(title, row1, row2, note);
           grid.appendChild(card);
@@ -234,14 +352,10 @@
       function renderFooter({from, exp, count}){
         const f = document.createElement('div');
         f.className = 'footer';
-        const a = document.createElement('div');
-        a.textContent = 'Need to scan another code?';
-        const toScan = document.createElement('button');
-        toScan.className = 'btn ghost';
-        toScan.textContent = 'Open scanner';
+        const a = document.createElement('div'); a.textContent = 'Need to scan another code?';
+        const toScan = document.createElement('button'); toScan.className = 'btn ghost'; toScan.textContent = 'Open scanner';
         toScan.addEventListener('click', ()=> renderScannerView(true));
-        const meta = document.createElement('div');
-        meta.className = 'muted';
+        const meta = document.createElement('div'); meta.className = 'muted';
         meta.textContent = `From: ${from||'—'} • Expires: ${fmtDateLong(exp||'—')} • ${count||0} item${(count||0)===1?'':'s'}`;
         f.append(a, toScan, meta);
         return f;
@@ -252,7 +366,6 @@
         const expParam = qs.get('exp') || '';
         const items = parseItems();
 
-        // Determine expiry: treat exp as local date, expire end of that day -> compare next day start > now
         const expDateOnly = dateOnlyFromParam(expParam);
         let expired = false;
         if (expDateOnly){
@@ -262,22 +375,17 @@
 
         app.innerHTML = '';
         app.appendChild(renderHeader({from, exp: expParam, count: items.length, expired}));
-
         if (expired) app.appendChild(renderExpiredNotice(expParam));
-
         if (!items.length){
-          const empty = document.createElement('div');
-          empty.className = 'notice';
-          empty.textContent = 'No items were provided in the link.';
+          const empty = document.createElement('div'); empty.className = 'notice'; empty.textContent = 'No items were provided in the link.';
           app.appendChild(empty);
         } else {
           app.appendChild(renderCards(items, expired));
         }
-
         app.appendChild(renderFooter({from, exp: expParam, count: items.length}));
       }
 
-      // Scanner view
+      // ---------- Scanner ----------
       function renderScannerView(openedFromContent=false){
         app.innerHTML = '';
         const header = document.createElement('header');
@@ -288,25 +396,21 @@
         header.append(h1, right);
 
         const wrap = document.createElement('div'); wrap.className = 'scanWrap';
-        const p = document.createElement('div'); p.className = 'muted';
-        p.textContent = 'Align a QR code within the frame. On success, you can open or copy the link.';
+        const p = document.createElement('div'); p.className = 'muted'; p.textContent = 'Align a QR code within the frame. On success, you can open or copy the link.';
         const box = document.createElement('div'); box.className = 'scanBox';
         const reader = document.createElement('div'); reader.id = 'reader';
 
         const resultBar = document.createElement('div'); resultBar.className = 'row';
-        const resText = document.createElement('div'); resText.className = 'muted small'; resText.textContent = '';
-        resText.style.wordBreak = 'break-all';
-        resText.style.flex = '1 1 auto';
+        const resText = document.createElement('div'); resText.className = 'muted small'; resText.textContent = ''; resText.style.wordBreak = 'break-all'; resText.style.flex = '1 1 auto';
         const openBtn = document.createElement('button'); openBtn.className = 'btn'; openBtn.textContent = 'Open link'; openBtn.disabled = true;
         const copyBtn = document.createElement('button'); copyBtn.className = 'btn secondary'; copyBtn.textContent = 'Copy link'; copyBtn.disabled = true;
         resultBar.append(resText, copyBtn, openBtn);
 
         const divider = document.createElement('div'); divider.className = 'divider';
-
         const backRow = document.createElement('div'); backRow.className = 'row';
         const backBtn = document.createElement('button'); backBtn.className = 'btn ghost'; backBtn.textContent = 'Back';
         backBtn.addEventListener('click', ()=>{
-          if (openedFromContent) renderContentView(); else history.replaceState(null, '', location.pathname); renderScannerView(false);
+          if (openedFromContent) renderContentView(); else { history.replaceState(null, '', location.pathname); renderScannerView(false); }
         });
         const pasteBtn = document.createElement('button'); pasteBtn.className = 'btn ghost'; pasteBtn.textContent = 'Paste link';
         pasteBtn.addEventListener('click', async ()=>{
@@ -318,7 +422,6 @@
         backRow.append(backBtn, pasteBtn);
 
         wrap.append(p, box, reader, divider, resultBar, backRow);
-
         app.append(header, wrap);
 
         let scanner = null;
@@ -331,7 +434,6 @@
           openBtn.disabled = !looksLink;
           copyBtn.disabled = !lastText;
           if (looksLink){
-            // If it looks like our MINI/view link, offer instant open
             try{
               const u = new URL(lastText);
               if (/\/MINI\/view\/index\.html$/i.test(u.pathname) && u.search) {
@@ -345,40 +447,30 @@
         openBtn.addEventListener('click', ()=> { if (lastText) location.href = lastText; });
         copyBtn.addEventListener('click', ()=> { if (lastText) copyText(lastText); });
 
-        // Start scanner
         if (window.Html5QrcodeScanner){
           const config = {
             fps: 10,
-            qrbox: (vw, vh)=> {
-              const size = Math.min(280, Math.round(Math.min(vw, vh) * 0.7));
-              return { width:size, height:size };
-            },
-            rememberLastUsedCamera: true,
-            showTorchButtonIfSupported: true,
-            showZoomSliderIfSupported: true
+            qrbox: (vw,vh)=>{ const size = Math.min(320, Math.round(Math.min(vw, vh)*0.7)); return { width:size, height:size }; },
+            rememberLastUsedCamera: true, showTorchButtonIfSupported: true, showZoomSliderIfSupported: true
           };
-          scanner = new Html5QrcodeScanner('reader', config, /* verbose */ false);
+          scanner = new Html5QrcodeScanner('reader', config, false);
           scanner.render(onScanSuccess, onScanError);
         } else {
-          const fallback = document.createElement('div');
-          fallback.className = 'notice';
-          fallback.textContent = 'Scanner failed to load. Please paste a link instead.';
+          const fallback = document.createElement('div'); fallback.className = 'notice'; fallback.textContent = 'Scanner failed to load. Please paste a link instead.';
           box.replaceWith(fallback);
         }
 
-        function onScanSuccess(decodedText, _decodedResult){
-          if (!decodedText || decodedText === lastText) return;
-          setResult(decodedText);
-        }
-        function onScanError(_error){ /* ignore continuous errors for UX */ }
+        function onScanSuccess(decodedText){ if (!decodedText || decodedText === lastText) return; setResult(decodedText); }
+        function onScanError(_err){ /* ignore continuous errors */ }
       }
 
-      // Router
-      if (hasQuery){
-        renderContentView();
-      } else {
-        renderScannerView(false);
-      }
+      // ---------- Router ----------
+      if (hasQuery) renderContentView();
+      else renderScannerView(false);
+
+      // Expose for other modules (optional)
+      window.openInlineViewer = openInlineViewer;
+      window.closeViewer = closeViewer;
     })();
   </script>
 </body>
