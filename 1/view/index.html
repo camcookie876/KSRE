@@ -31,6 +31,8 @@
       background: var(--bg);
       flex-direction: column;
       z-index: 1;
+      opacity: 1;
+      pointer-events: auto;
     }
     #video {
       width: 90%;
@@ -88,16 +90,24 @@
       background: #e04b4b;
       transform: scale(1.05);
     }
-    #error {
-      color: #f66;
-      margin-top: 0.5rem;
-      font-size: 0.9rem;
-      text-align: center;
+    #popup {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) scale(0.9);
+      background: var(--accent);
+      color: #fff;
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
       opacity: 0;
-      transition: opacity 0.4s ease;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      z-index: 99;
     }
-    #error.visible {
+    #popup.visible {
       opacity: 1;
+      transform: translateX(-50%) scale(1);
     }
   </style>
 </head>
@@ -105,7 +115,6 @@
 
   <div id="scanner">
     <video id="video" autoplay muted playsinline></video>
-    <div id="error"></div>
   </div>
 
   <div id="viewer">
@@ -115,8 +124,9 @@
       <input id="linkInput" type="text" placeholder="Enter Camcookie link with ?code=" />
       <button id="loadBtn">Load</button>
     </nav>
-    <div id="error"></div>
   </div>
+
+  <div id="popup"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <script>
@@ -127,20 +137,14 @@
     const scanBtn = document.getElementById('scanBtn');
     const linkInput = document.getElementById('linkInput');
     const loadBtn = document.getElementById('loadBtn');
-    const errorDivs = document.querySelectorAll('#error');
+    const popup = document.getElementById('popup');
 
-    function showError(msg) {
-      errorDivs.forEach(div => {
-        div.textContent = msg;
-        div.classList.add('visible');
-      });
-    }
+    let scanningActive = false;
 
-    function clearError() {
-      errorDivs.forEach(div => {
-        div.textContent = '';
-        div.classList.remove('visible');
-      });
+    function showPopup(msg) {
+      popup.textContent = msg;
+      popup.classList.add('visible');
+      setTimeout(() => popup.classList.remove('visible'), 3000);
     }
 
     function showViewer(code) {
@@ -148,6 +152,7 @@
       viewer.classList.add('active');
       scanner.style.opacity = '0';
       scanner.style.pointerEvents = 'none';
+      scanningActive = false;
     }
 
     function validateLink(link) {
@@ -174,7 +179,7 @@
       viewer.classList.remove('active');
       scanner.style.opacity = '1';
       scanner.style.pointerEvents = 'auto';
-      clearError();
+      scanningActive = true;
     };
 
     loadBtn.onclick = () => {
@@ -182,9 +187,8 @@
       if (validateLink(link)) {
         const url = new URL(link);
         showViewer(url.searchParams.get('code'));
-        clearError();
       } else {
-        showError("Invalid Camcookie link. Must be /MINI/1/view/?code=...");
+        showPopup("Invalid Camcookie link. Must be /MINI/1/view/?code=...");
       }
     };
 
@@ -196,7 +200,7 @@
         const ctx = canvas.getContext('2d');
 
         function scanFrame() {
-          if (video.readyState === video.HAVE_ENOUGH_DATA) {
+          if (scanningActive && video.readyState === video.HAVE_ENOUGH_DATA) {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -205,10 +209,9 @@
             if (code && validateLink(code.data)) {
               const url = new URL(code.data);
               showViewer(url.searchParams.get('code'));
-              clearError();
               return;
             } else if (code) {
-              showError("Scanned QR is not a valid Camcookie link.");
+              showPopup("Scanned QR is not a valid Camcookie link.");
             }
           }
           requestAnimationFrame(scanFrame);
@@ -216,7 +219,7 @@
 
         requestAnimationFrame(scanFrame);
       })
-      .catch(() => showError("Camera access denied or unavailable."));
+      .catch(() => showPopup("Camera access denied or unavailable."));
   </script>
 </body>
 </html>
