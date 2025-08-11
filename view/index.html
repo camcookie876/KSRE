@@ -1,596 +1,467 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>view – Camcookie MINI</title>
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="light dark" />
-  <!-- Privacy-first CSP; inline scripts/styles require 'unsafe-inline' in this single-file build -->
-  <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self';
-                 img-src 'self' data:;
-                 style-src 'self' 'unsafe-inline';
-                 script-src 'self' 'unsafe-inline';
-                 frame-src https:;
-                 connect-src 'none';
-                 base-uri 'none';
-                 form-action 'none'">
-  <!-- Favicon (emoji, no external requests) -->
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Ctext y='0.9em' font-size='96'%3E🍪%3C/text%3E%3C/svg%3E">
+  <title>view — Camcookie MINI </title>
+  <meta name="color-scheme" content="light only" />
   <style>
-    :root {
-      --bg: #f9fafb;
-      --fg: #111827;
-      --muted: #6b7280;
-      --card: #ffffff;
-      --border: #e5e7eb;
-      --brand: #0ea5e9;
-      --brand-ink: #fff;
-      --ok: #16a34a;
-      --warn: #f59e0b;
-      --bad: #ef4444;
-      --shadow: 0 8px 20px rgba(0,0,0,0.08);
-      --radius: 14px;
-      --gap: 12px;
-      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    :root{
+      --bg:#f7f7f8; --card:#ffffff; --text:#1f2937; --muted:#6b7280;
+      --accent:#0ea5e9; --accent-2:#22c55e; --danger:#ef4444;
+      --warn-bg:#fff3cd; --warn-border:#ffc107;
+      --border:#e5e7eb; --shadow:0 10px 24px rgba(0,0,0,.06);
+      --good:#16a34a;
     }
-    [data-theme="green"] { --brand:#10b981; }
-    [data-theme="pink"] { --brand:#ec4899; }
-    [data-theme="amber"] { --brand:#f59e0b; }
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; background:var(--bg); color:var(--text); font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    .wrap{ max-width:1100px; margin:28px auto 96px; padding:0 16px; }
+    header{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+    h1{ font-size:1.4rem; margin:0; }
+    .muted{ color:var(--muted); }
+    .badge{
+      display:inline-flex; align-items:center; gap:8px; padding:.5em .75em; border-radius:999px; font-weight:600;
+      background:#eef2f7; color:#0f172a; border:1px solid #d7dde6;
+    }
+    .badge.exp{ background:var(--warn-bg); border-color:var(--warn-border); }
+    .badge.good{ background:#e8faf0; border-color:#b4f0cc; color:#065f46; }
+    .actions{ display:flex; gap:8px; flex-wrap:wrap; }
+    .btn{
+      border:0; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:700; letter-spacing:.2px;
+      background:var(--accent); color:#fff; transition:transform .1s ease, opacity .2s ease;
+    }
+    .btn:active{ transform:translateY(1px); }
+    .btn.secondary{ background:#e5e7eb; color:#111827; }
+    .btn.ghost{ background:transparent; color:#111827; border:1px solid var(--border); }
+    .btn.danger{ background:#fee2e2; color:#b91c1c; }
+    .btn[disabled]{ opacity:.5; cursor:not-allowed; }
+    .grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); gap:14px; margin-top:14px; }
+    .card{
+      background:var(--card); border-radius:12px; padding:14px; border:1px solid rgba(0,0,0,.06); box-shadow:var(--shadow);
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .title{ font-size:1.05rem; font-weight:700; }
+    .pin{
+      font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size:1.2rem; background:#f3f4f6; padding:6px 10px; border-radius:8px; display:inline-flex; align-items:center; gap:8px;
+    }
+    .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .toast{
+      position:fixed; top:12px; right:12px; background:var(--warn-bg); border-left:4px solid var(--warn-border);
+      padding:.7em 1em; border-radius:10px; color:#333; box-shadow:0 8px 22px rgba(0,0,0,.08);
+      opacity:0; transform:translateY(-8px); transition:all .22s ease; max-width:420px; z-index:50;
+    }
+    .toast.show{ opacity:1; transform:translateY(0); }
+    .notice{
+      margin:12px 0; padding:12px; border-radius:12px; border:1px dashed #f59e0b; background:#fffaf0; color:#92400e;
+    }
+    .expired{
+      border:1px solid #fecaca; background:#fff1f2; color:#991b1b;
+    }
+    .footer{ margin-top:18px; color:var(--muted); font-size:.92rem; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    /* Scanner */
+    .scanWrap{
+      background:var(--card); border-radius:12px; border:1px solid rgba(0,0,0,.06); box-shadow:var(--shadow);
+      padding:14px;
+    }
+    .scanBox{ width:100%; max-width:520px; margin:12px auto; }
+    #reader{ border-radius:12px; overflow:hidden; }
+    .small{ font-size:.92rem; }
+    .divider{ height:1px; background:var(--border); margin:12px 0; }
+    /* Utilities */
+    .right{ margin-left:auto; }
+  </style>
 
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #0b1020;
-        --fg: #e5e7eb;
-        --muted: #9ca3af;
-        --card: #0f172a;
-        --border: #1f2a44;
-        --shadow: 0 10px 24px rgba(0,0,0,0.45);
-      }
-    }
-
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-      background: var(--bg);
-      color: var(--fg);
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-    a { color: var(--brand); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    .wrap {
-      max-width: 980px;
-      margin: 28px auto 80px;
-      padding: 0 16px;
-    }
-    header.head {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 10px;
-    }
-    .title {
-      display: flex; align-items: center; gap: 10px;
-      font-weight: 800; letter-spacing: 0.2px; font-size: 22px;
-    }
-    .badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      font-size: 12px; font-weight: 600; color: var(--muted);
-      border: 1px dashed var(--border); border-radius: 999px;
-      padding: 6px 10px;
-    }
-    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
-    button.btn {
-      appearance: none; border: 0; border-radius: 10px;
-      padding: 10px 14px; font-weight: 700; cursor: pointer;
-      background: var(--brand); color: var(--brand-ink);
-      box-shadow: var(--shadow); transform: translateZ(0);
-      transition: transform .15s ease, opacity .15s ease, filter .15s ease;
-    }
-    button.btn:hover { transform: translateY(-1px); }
-    button.btn.secondary { background: transparent; color: var(--fg); border: 1px solid var(--border); }
-    button.btn.ghost { background: transparent; color: var(--muted); border: 1px dashed var(--border); }
-    button.btn:disabled { opacity: .5; cursor: not-allowed; }
-
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 16px; margin-top: 16px; }
-    .card {
-      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-      box-shadow: var(--shadow); padding: 16px; position: relative; overflow: hidden;
-      transition: border-color .2s ease, transform .2s ease, background .2s ease;
-    }
-    .card:hover { border-color: color-mix(in oklab, var(--brand) 30%, var(--border)); transform: translateY(-2px); }
-    .card h3 { margin: 0 0 6px; font-size: 16px; }
-    .meta { font-size: 12px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
-    .pin {
-      display: inline-flex; align-items: center; gap: 6px;
-      font-family: var(--mono); font-size: 13px; color: var(--fg);
-      padding: 6px 8px; border-radius: 8px; background: color-mix(in oklab, var(--brand) 12%, transparent);
-      border: 1px solid color-mix(in oklab, var(--brand) 35%, var(--border));
-      margin: 8px 0 10px;
-    }
-    .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-
-    .ribbon {
-      position: absolute; top: 12px; right: -30px; transform: rotate(25deg);
-      background: var(--bad); color: #fff; font-weight: 800; font-size: 11px; letter-spacing: .5px;
-      padding: 6px 56px; box-shadow: var(--shadow);
-    }
-
-    /* Viewer overlay */
+  <!-- Viewer overlay styles -->
+  <style>
     .viewer {
-      position: fixed; inset: 0; background: rgba(0,0,0,.65);
-      display: none; z-index: 1000; backdrop-filter: blur(2px);
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.65);
+      display: none;
+      z-index: 1000;
+      backdrop-filter: blur(2px);
     }
     .viewer.show { display: block; }
     .viewer .shell {
-      position: absolute; inset: 24px; border-radius: 14px; overflow: hidden;
-      box-shadow: 0 30px 80px rgba(0,0,0,.35); border: 1px solid #0004;
+      position: absolute;
+      inset: 24px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 30px 80px rgba(0,0,0,.35);
+      border: 1px solid #0004;
+      background: #000;
     }
     .viewer iframe {
-      width: 100%; height: 100%; border: 0; background: #000;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #000;
     }
     .viewer .exit {
-      position: absolute; top: 16px; right: 16px; z-index: 2;
-    }
-
-    /* Toasts */
-    .toasts { position: fixed; bottom: 16px; right: 16px; display: grid; gap: 10px; z-index: 1100; }
-    .toast {
-      background: var(--card); color: var(--fg); border: 1px solid var(--border);
-      border-left: 6px solid var(--brand); border-radius: 10px; padding: 10px 12px;
-      box-shadow: var(--shadow); min-width: 220px; font-weight: 600;
-      animation: slideIn .24s ease;
-    }
-    .toast.ok { border-left-color: var(--ok); }
-    .toast.warn { border-left-color: var(--warn); }
-    .toast.bad { border-left-color: var(--bad); }
-    @keyframes slideIn { from { transform: translateY(6px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
-
-    /* Theme popup */
-    .popup {
-      position: fixed; top: 16px; right: 16px; z-index: 1050;
-      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
-      padding: 12px; box-shadow: var(--shadow); display: none; min-width: 220px;
-    }
-    .popup.show { display: block; }
-    .row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
-    .hint { color: var(--muted); font-size: 12px; }
-
-    /* Composer */
-    .composer { margin-top: 16px; }
-    .field { display: grid; gap: 6px; margin: 8px 0; }
-    .field label { font-size: 12px; color: var(--muted); font-weight: 700; }
-    input[type="text"], input[type="url"], input[type="number"], input[type="date"] {
-      width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
-      background: var(--card); color: var(--fg);
-    }
-    code.inline { background: color-mix(in oklab, var(--brand) 10%, transparent); padding: 2px 6px; border-radius: 6px; font-family: var(--mono); }
-    .footer { margin-top: 18px; color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-
-    @media (prefers-reduced-motion: reduce) {
-      * { transition-duration: 0.01ms !important; animation: none !important; }
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 2;
     }
   </style>
+
+  <!-- QR scanning library -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.9/html5-qrcode.min.js"></script>
 </head>
 <body>
   <div class="wrap" id="app" aria-live="polite"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite">OK.</div>
 
   <!-- Viewer overlay -->
-  <div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="Inline viewer">
+  <div id="viewer" class="viewer" role="dialog" aria-modal="true" aria-label="Inline viewer">
     <div class="shell">
-      <iframe id="frame"
+      <iframe id="viewerFrame"
               referrerpolicy="no-referrer"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
               allow="clipboard-read; clipboard-write; fullscreen; autoplay; encrypted-media; picture-in-picture"></iframe>
-      <button class="btn secondary exit" id="exitBtn" type="button" aria-label="Close viewer">Exit</button>
+      <button class="btn secondary exit" id="viewerExit" type="button" aria-label="Close viewer">Exit</button>
     </div>
   </div>
-
-  <!-- Theme / settings popup -->
-  <div class="popup" id="themePopup" role="dialog" aria-label="Theme settings">
-    <div class="row">
-      <strong>Theme</strong>
-      <select id="themeSelect" aria-label="Theme select">
-        <option value="blue">Blue</option>
-        <option value="green">Green</option>
-        <option value="pink">Pink</option>
-        <option value="amber">Amber</option>
-      </select>
-    </div>
-    <div class="row">
-      <label><input id="reducedMotion" type="checkbox"> Prefer subtle motion</label>
-    </div>
-    <div class="hint">Shortcut: Ctrl+Alt+C • Close: Esc</div>
-  </div>
-
-  <!-- Toast container -->
-  <div class="toasts" id="toasts" aria-live="assertive" aria-atomic="true"></div>
-
-  <noscript>
-    <div class="wrap">
-      <p style="padding:12px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;">
-        JavaScript is required for the Camcookie MINI viewer. Please enable it to continue.
-      </p>
-    </div>
-  </noscript>
 
   <script>
-    // ------------- Utilities
-    const qs = new URLSearchParams(location.search);
-    const $ = sel => document.querySelector(sel);
-    const $$ = sel => [...document.querySelectorAll(sel)];
+    (function(){
+      const app = document.getElementById('app');
+      const toast = document.getElementById('toast');
 
-    const state = {
-      entries: [], // {title, pin, url, exp?}
-      from: '', exp: '', theme: localStorage.getItem('mini.theme') || 'blue'
-    };
+      // Viewer refs
+      const viewer = document.getElementById('viewer');
+      const viewerFrame = document.getElementById('viewerFrame');
+      const viewerExit = document.getElementById('viewerExit');
 
-    function showToast(msg, kind = 'ok', timeout = 2400) {
-      const box = document.createElement('div');
-      box.className = `toast ${kind}`;
-      box.textContent = msg;
-      const host = $('#toasts');
-      host.appendChild(box);
-      const t = setTimeout(() => box.remove(), timeout);
-      box.addEventListener('click', () => { clearTimeout(t); box.remove(); });
-    }
+      // Utilities
+      const qs = new URLSearchParams(location.search);
+      const hasQuery = Array.from(qs.keys()).length > 0;
 
-    function sanitizeUrl(u) {
-      try {
-        // Normalize and only allow http/https; strip whitespace
-        const raw = u.trim();
-        if (!raw) return null;
-        const withProto = (/^https?:\/\//i.test(raw)) ? raw : 'https://' + raw;
-        const url = new URL(withProto);
-        if (!/^https?:$/.test(url.protocol)) return null;
-        return url.toString();
-      } catch { return null; }
-    }
+      const clamp = (n,a,b)=>Math.max(a,Math.min(b,n));
+      const safe = s => (s==null?'':String(s));
+      const fmtDateLong = (yyyy_mm_dd)=>{
+        if (!yyyy_mm_dd) return '—';
+        const [y,m,d] = yyyy_mm_dd.split('-').map(Number);
+        const dt = new Date(y, (m||1)-1, d||1);
+        return dt.toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
+      };
+      const todayDateOnly = ()=> {
+        const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+      };
+      const dateOnlyFromParam = (yyyy_mm_dd)=>{
+        if (!yyyy_mm_dd) return null;
+        const [y,m,d] = yyyy_mm_dd.split('-').map(Number);
+        if (!y || !m || !d) return null;
+        return new Date(y, m-1, d);
+      };
+      const showToast = (msg, ms=1800)=>{
+        toast.textContent = msg;
+        toast.classList.add('show');
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(()=>toast.classList.remove('show'), ms);
+      };
+      const copyText = async (text)=>{ try{ await navigator.clipboard.writeText(text); showToast('Copied.'); }catch{} };
+      const openSafe = (url)=>window.open(url, '_blank', 'noopener');
 
-    function isExpired(dateStr) {
-      if (!dateStr) return false;
-      const d = new Date(dateStr);
-      if (isNaN(d)) return false;
-      const now = new Date();
-      return d.getTime() < now.getTime();
-    }
-
-    function countdown(dateStr) {
-      const d = new Date(dateStr);
-      if (isNaN(d)) return '';
-      const ms = d - new Date();
-      if (ms <= 0) return 'expired';
-      const s = Math.floor(ms / 1000);
-      const days = Math.floor(s / 86400);
-      const hours = Math.floor((s % 86400) / 3600);
-      const mins = Math.floor((s % 3600) / 60);
-      return days ? days + 'd ' + hours + 'h' : (hours ? hours + 'h ' + mins + 'm' : mins + 'm');
-    }
-
-    function copy(text) {
-      return navigator.clipboard?.writeText(text)
-        .then(() => true)
-        .catch(async () => {
-          // Fallback
-          const ta = document.createElement('textarea');
-          ta.value = text;
-          ta.style.position = 'fixed';
-          ta.style.left = '-9999px';
-          document.body.appendChild(ta);
-          ta.select();
-          let ok = false;
-          try { ok = document.execCommand('copy'); } catch {}
-          ta.remove();
-          return ok;
-        });
-    }
-
-    function b64ToUtf8(b64) {
-      try { return decodeURIComponent(escape(atob(b64))); }
-      catch { return null; }
-    }
-    function utf8ToB64(str) {
-      try { return btoa(unescape(encodeURIComponent(str))); }
-      catch { return null; }
-    }
-
-    // ------------- Parsing
-    function parseKParam(raw) {
-      // Format: title|pin|url  (title/url may be encoded)
-      const parts = raw.split('|');
-      if (parts.length < 3) return null;
-      const [t, p, u, expMaybe] = parts;
-      const title = decodeURIComponent((t||'').trim());
-      const pin = (p||'').trim();
-      const url = sanitizeUrl(decodeURIComponent((u||'').trim()));
-      const exp = expMaybe ? decodeURIComponent(expMaybe.trim()) : '';
-      if (!title || !pin || !url) return null;
-      if (!/^\d{4,10}$/.test(pin)) return null;
-      return { title, pin, url, exp };
-    }
-
-    function parseDataParam(b64) {
-      const json = b64ToUtf8(b64);
-      if (!json) return [];
-      try {
-        const arr = JSON.parse(json);
-        if (!Array.isArray(arr)) return [];
-        return arr.map(x => {
-          const title = String(x.title||'').trim();
-          const pin = String(x.pin||'').trim();
-          const url = sanitizeUrl(String(x.url||'').trim());
-          const exp = String(x.exp||'').trim();
-          if (!title || !/^\d{4,10}$/.test(pin) || !url) return null;
-          return { title, pin, url, exp };
-        }).filter(Boolean);
-      } catch { return []; }
-    }
-
-    // ------------- Render
-    function appHeader() {
-      const wrap = document.createElement('div');
-      wrap.innerHTML = `
-        <header class="head">
-          <div class="title" aria-label="Camcookie MINI viewer">
-            <span style="font-size:20px">🍪</span>
-            <span>Camcookie MINI Viewer</span>
-            <span class="badge" id="fromBadge" title="Source">from: ${state.from || '—'}</span>
-            <span class="badge" id="expBadge" title="Expiration">exp: ${state.exp || '—'}</span>
-          </div>
-          <div class="toolbar">
-            <button class="btn" id="openAllBtn" type="button">Open first</button>
-            <button class="btn secondary" id="shareBtn" type="button">Share</button>
-            <button class="btn ghost" id="themeBtn" type="button" aria-haspopup="dialog">Theme</button>
-          </div>
-        </header>
-      `;
-      return wrap.firstElementChild;
-    }
-
-    function card(entry, idx) {
-      const expired = isExpired(entry.exp || state.exp);
-      const root = document.createElement('div');
-      root.className = 'card';
-      root.setAttribute('role', 'group');
-      root.setAttribute('aria-label', entry.title);
-
-      root.innerHTML = `
-        ${expired ? `<div class="ribbon">EXPIRED</div>` : ''}
-        <h3>${entry.title}</h3>
-        <div class="meta">
-          <span class="hint">#${idx+1}</span>
-          ${entry.exp || state.exp ? `<span class="hint" data-countdown>${entry.exp || state.exp}</span>` : ``}
-        </div>
-        <div class="pin" aria-label="PIN">
-          <span>PIN</span>
-          <strong>${entry.pin}</strong>
-        </div>
-        <div class="actions">
-          <button class="btn" data-open type="button" ${expired ? 'disabled':''}>Open</button>
-          <button class="btn secondary" data-copy type="button">Copy link</button>
-          <button class="btn ghost" data-copyk type="button" title="Copy kahoot string">Copy k</button>
-        </div>
-      `;
-
-      // Countdown updater
-      const cd = root.querySelector('[data-countdown]');
-      if (cd) {
-        const target = new Date(cd.textContent);
-        const tick = () => {
-          const left = countdown(target);
-          cd.textContent = target.toISOString().slice(0,10) + (left && left !== 'expired' ? ` • ${left}` : '');
-        };
-        tick();
-        const t = setInterval(tick, 60_000);
-        root.addEventListener('remove', () => clearInterval(t));
+      // Inline viewer helpers
+      const sanitizeUrl = (u)=>{
+        try{
+          const raw = String(u||'').trim();
+          if (!raw) return null;
+          const withProto = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw;
+          const url = new URL(withProto);
+          if (!/^https?:$/.test(url.protocol)) return null;
+          return url.toString();
+        }catch{ return null; }
+      };
+      function openInline(url){
+        const safeUrl = sanitizeUrl(url);
+        if (!safeUrl){ showToast('Invalid link.'); return; }
+        viewerFrame.src = safeUrl;
+        viewer.classList.add('show');
+        document.body.style.overflow = 'hidden';
       }
+      function closeInline(){
+        viewer.classList.remove('show');
+        document.body.style.overflow = '';
+        viewerFrame.src = 'about:blank';
+      }
+      viewerExit.addEventListener('click', closeInline);
+      viewer.addEventListener('click', e => { if (e.target === viewer) closeInline(); });
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') closeInline(); });
 
-      // Actions
-      root.querySelector('[data-open]')?.addEventListener('click', () => openViewer(entry.url));
-      root.querySelector('[data-copy]')?.addEventListener('click', async () => {
-        const ok = await copy(entry.url);
-        showToast(ok ? 'Link copied' : 'Copy failed', ok ? 'ok' : 'bad');
-      });
-      root.querySelector('[data-copyk]')?.addEventListener('click', async () => {
-        const k = `${encodeURIComponent(entry.title)}|${entry.pin}|${encodeURIComponent(entry.url)}${entry.exp ? `|${encodeURIComponent(entry.exp)}`:''}`;
-        const ok = await copy(k);
-        showToast(ok ? 'K string copied' : 'Copy failed', ok ? 'ok' : 'bad');
-      });
-
-      return root;
-    }
-
-    function composer() {
-      const box = document.createElement('div');
-      box.className = 'card composer';
-      box.innerHTML = `
-        <h3>Create an entry</h3>
-        <div class="field">
-          <label for="t">Title</label>
-          <input id="t" type="text" placeholder="Lesson 5 – Review"/>
-        </div>
-        <div class="field">
-          <label for="p">PIN</label>
-          <input id="p" type="number" inputmode="numeric" placeholder="123456"/>
-        </div>
-        <div class="field">
-          <label for="u">URL</label>
-          <input id="u" type="url" placeholder="kahoot.it or https://example.com/session"/>
-        </div>
-        <div class="field">
-          <label for="e">Expiration (optional)</label>
-          <input id="e" type="date"/>
-        </div>
-        <div class="actions">
-          <button class="btn" id="addBtn" type="button">Add</button>
-          <button class="btn secondary" id="shareAll" type="button">Share all</button>
-        </div>
-        <p class="hint">Tip: Use multiple <code class="inline">?k=title|pin|url</code> params or pack JSON via <code class="inline">?data=base64</code>.</p>
-      `;
-      box.querySelector('#addBtn')?.addEventListener('click', () => {
-        const t = box.querySelector('#t').value.trim();
-        const p = String(box.querySelector('#p').value || '').trim();
-        const u = sanitizeUrl(String(box.querySelector('#u').value||''));
-        const e = box.querySelector('#e').value.trim();
-        if (!t || !/^\d{4,10}$/.test(p) || !u) {
-          showToast('Fill title, PIN (4–10 digits), and a valid URL', 'warn');
-          return;
+      // Parse k params: each is encodeURIComponent(title)|encodeURIComponent(pin)|encodeURIComponent(url)
+      function parseItems(){
+        const entries = qs.getAll('k');
+        const items = [];
+        for (const raw of entries){
+          if (!raw) continue;
+          const parts = String(raw).split('|');
+          if (parts.length < 3) continue;
+          try{
+            const title = decodeURIComponent(parts[0] || '');
+            const pin   = decodeURIComponent(parts[1] || '');
+            const url   = decodeURIComponent(parts[2] || '');
+            if (title || pin || url) items.push({ title, pin, url });
+          }catch(_e){ /* ignore malformed */ }
         }
-        state.entries.push({ title: t, pin: p, url: u, exp: e });
-        showToast('Added', 'ok');
-        render();
-      });
-      box.querySelector('#shareAll')?.addEventListener('click', () => {
-        const payload = state.entries.map(x => ({ title:x.title, pin:x.pin, url:x.url, exp:x.exp || '' }));
-        const b64 = utf8ToB64(JSON.stringify(payload));
-        if (!b64) { showToast('Share build failed', 'bad'); return; }
-        const url = new URL(location.href);
-        url.search = ''; // reset
-        url.searchParams.set('data', b64);
-        if (state.from) url.searchParams.set('from', state.from);
-        if (state.exp) url.searchParams.set('exp', state.exp);
-        navigator.share?.({ url: url.toString(), title: 'Camcookie MINI' })
-          .catch(() => copy(url.toString()).then(ok => showToast(ok ? 'Share link copied' : 'Copy failed', ok ? 'ok':'bad')));
-      });
-      return box;
-    }
-
-    function applyTheme(name) {
-      document.documentElement.setAttribute('data-theme', name);
-      localStorage.setItem('mini.theme', name);
-      state.theme = name;
-      $('#themeSelect').value = name;
-    }
-
-    // ------------- Viewer
-    const viewer = $('#viewer');
-    const frame = $('#frame');
-    const exitBtn = $('#exitBtn');
-
-    function openViewer(url) {
-      frame.src = url;
-      viewer.classList.add('show');
-      document.body.style.overflow = 'hidden';
-    }
-    function closeViewer() {
-      viewer.classList.remove('show');
-      document.body.style.overflow = '';
-      frame.src = 'about:blank';
-    }
-    exitBtn.addEventListener('click', closeViewer);
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') {
-        closeViewer();
-        $('#themePopup').classList.remove('show');
+        return items;
       }
-      if (e.ctrlKey && e.altKey && e.code === 'KeyC') {
-        $('#themePopup').classList.toggle('show');
-        $('#themeSelect').focus();
+
+      function renderHeader({from, exp, count, expired}){
+        const header = document.createElement('header');
+
+        const left = document.createElement('div');
+        const h1 = document.createElement('h1');
+        h1.textContent = 'Camcookie — MINI/view';
+        left.appendChild(h1);
+
+        const right = document.createElement('div');
+        right.className = 'actions';
+
+        const src = document.createElement('span');
+        src.className = 'badge';
+        src.textContent = 'From: ' + (from || '—');
+
+        const expBadge = document.createElement('span');
+        expBadge.className = 'badge ' + (expired ? 'exp' : 'good');
+        expBadge.textContent = expired ? ('Expired: ' + fmtDateLong(exp||'')) : ('Expires: ' + fmtDateLong(exp||'—'));
+
+        const cnt = document.createElement('span');
+        cnt.className = 'badge';
+        cnt.textContent = (count||0) + ' item' + ((count||0)===1?'':'s');
+
+        right.append(src, expBadge, cnt);
+
+        header.append(left, right);
+        return header;
       }
-    });
-    viewer.addEventListener('click', e => { if (e.target === viewer) closeViewer(); });
 
-    // ------------- Main render
-    function render() {
-      const app = $('#app');
-      app.innerHTML = '';
-      app.appendChild(appHeader());
+      function renderCards(items, expired){
+        const grid = document.createElement('div');
+        grid.className = 'grid';
+        items.forEach((it, i)=>{
+          const card = document.createElement('div');
+          card.className = 'card';
 
-      const grid = document.createElement('div');
-      grid.className = 'grid';
-      if (state.entries.length === 0) {
-        const empty = document.createElement('div');
-        empty.className = 'card';
-        empty.innerHTML = `
-          <h3>No entries yet</h3>
-          <p class="hint">Add via query string or the composer below.</p>
-          <div class="actions">
-            <button class="btn" id="sampleBtn" type="button">Load sample</button>
-          </div>
-        `;
-        empty.querySelector('#sampleBtn')?.addEventListener('click', () => {
-          state.entries = [
-            { title: 'Quick Check – Fractions', pin: '456789', url: 'https://kahoot.it', exp: '' },
-            { title: 'Review – Unit 2', pin: '123456', url: 'https://example.com/session', exp: '' },
-          ];
-          render();
+          const title = document.createElement('div');
+          title.className = 'title';
+          title.textContent = it.title || ('Item ' + (i+1));
+
+          const row1 = document.createElement('div');
+          row1.className = 'row';
+
+          const pin = document.createElement('div');
+          pin.className = 'pin';
+          pin.innerHTML = '<strong>PIN:</strong> <span>' + (safe(it.pin)||'—') + '</span>';
+
+          const copyPinBtn = document.createElement('button');
+          copyPinBtn.className = 'btn ghost';
+          copyPinBtn.textContent = 'Copy PIN';
+          copyPinBtn.addEventListener('click', ()=> copyText(String(it.pin||'')));
+
+          row1.append(pin, copyPinBtn);
+
+          const row2 = document.createElement('div');
+          row2.className = 'row';
+
+          const openBtn = document.createElement('button');
+          openBtn.className = 'btn';
+          openBtn.textContent = 'Open link';
+          // Modified: open inline in sandboxed iframe
+          openBtn.addEventListener('click', ()=> openInline(it.url));
+
+          const copyLinkBtn = document.createElement('button');
+          copyLinkBtn.className = 'btn secondary';
+          copyLinkBtn.textContent = 'Copy link';
+          copyLinkBtn.addEventListener('click', ()=> copyText(String(it.url||'')));
+
+          const copyAllBtn = document.createElement('button');
+          copyAllBtn.className = 'btn ghost';
+          copyAllBtn.textContent = 'Copy title+PIN';
+          copyAllBtn.addEventListener('click', ()=>{
+            const line = `${it.title} — PIN: ${it.pin}`;
+            copyText(line);
+          });
+
+          if (!it.url) openBtn.disabled = true;
+          if (expired) {
+            openBtn.disabled = true;
+            card.classList.add('expired');
+          }
+
+          row2.append(openBtn, copyLinkBtn, copyAllBtn);
+
+          const note = document.createElement('div');
+          note.className = 'muted small';
+          try {
+            note.textContent = (new URL(it.url, location.href)).hostname || '—';
+          } catch {
+            note.textContent = '—';
+          }
+
+          card.append(title, row1, row2, note);
+          grid.appendChild(card);
         });
-        app.appendChild(empty);
+        return grid;
+      }
+
+      function renderExpiredNotice(exp){
+        const n = document.createElement('div');
+        n.className = 'notice expired';
+        n.textContent = `This collection expired on ${fmtDateLong(exp||'')}. You can still copy details, but links are disabled.`;
+        return n;
+      }
+
+      function renderFooter({from, exp, count}){
+        const f = document.createElement('div');
+        f.className = 'footer';
+        const a = document.createElement('div');
+        a.textContent = 'Need to scan another code?';
+        const toScan = document.createElement('button');
+        toScan.className = 'btn ghost';
+        toScan.textContent = 'Open scanner';
+        toScan.addEventListener('click', ()=> renderScannerView(true));
+        const meta = document.createElement('div');
+        meta.className = 'muted';
+        meta.textContent = `From: ${from||'—'} • Expires: ${fmtDateLong(exp||'—')} • ${count||0} item${(count||0)===1?'':'s'}`;
+        f.append(a, toScan, meta);
+        return f;
+      }
+
+      function renderContentView(){
+        const from = qs.get('from') || '';
+        const expParam = qs.get('exp') || '';
+        const items = parseItems();
+
+        // Determine expiry: treat exp as local date, expire end of that day -> compare next day start > now
+        const expDateOnly = dateOnlyFromParam(expParam);
+        let expired = false;
+        if (expDateOnly){
+          const today = todayDateOnly();
+          expired = today.getTime() > expDateOnly.getTime();
+        }
+
+        app.innerHTML = '';
+        app.appendChild(renderHeader({from, exp: expParam, count: items.length, expired}));
+
+        if (expired) app.appendChild(renderExpiredNotice(expParam));
+
+        if (!items.length){
+          const empty = document.createElement('div');
+          empty.className = 'notice';
+          empty.textContent = 'No items were provided in the link.';
+          app.appendChild(empty);
+        } else {
+          app.appendChild(renderCards(items, expired));
+        }
+
+        app.appendChild(renderFooter({from, exp: expParam, count: items.length}));
+      }
+
+      // Scanner view
+      function renderScannerView(openedFromContent=false){
+        app.innerHTML = '';
+        const header = document.createElement('header');
+        const h1 = document.createElement('h1'); h1.textContent = 'Camcookie — MINI/view';
+        const right = document.createElement('div'); right.className = 'actions';
+        const hint = document.createElement('span'); hint.className = 'badge'; hint.textContent = 'Scan a QR code to load a collection';
+        right.appendChild(hint);
+        header.append(h1, right);
+
+        const wrap = document.createElement('div'); wrap.className = 'scanWrap';
+        const p = document.createElement('div'); p.className = 'muted';
+        p.textContent = 'Align a QR code within the frame. On success, you can open or copy the link.';
+        const box = document.createElement('div'); box.className = 'scanBox';
+        const reader = document.createElement('div'); reader.id = 'reader';
+
+        const resultBar = document.createElement('div'); resultBar.className = 'row';
+        const resText = document.createElement('div'); resText.className = 'muted small'; resText.textContent = '';
+        resText.style.wordBreak = 'break-all';
+        resText.style.flex = '1 1 auto';
+        const openBtn = document.createElement('button'); openBtn.className = 'btn'; openBtn.textContent = 'Open link'; openBtn.disabled = true;
+        const copyBtn = document.createElement('button'); copyBtn.className = 'btn secondary'; copyBtn.textContent = 'Copy link'; copyBtn.disabled = true;
+        resultBar.append(resText, copyBtn, openBtn);
+
+        const divider = document.createElement('div'); divider.className = 'divider';
+
+        const backRow = document.createElement('div'); backRow.className = 'row';
+        const backBtn = document.createElement('button'); backBtn.className = 'btn ghost'; backBtn.textContent = 'Back';
+        backBtn.addEventListener('click', ()=>{
+          if (openedFromContent) renderContentView(); else history.replaceState(null, '', location.pathname); renderScannerView(false);
+        });
+        const pasteBtn = document.createElement('button'); pasteBtn.className = 'btn ghost'; pasteBtn.textContent = 'Paste link';
+        pasteBtn.addEventListener('click', async ()=>{
+          try{
+            const t = await navigator.clipboard.readText();
+            if (t && /^https?:\/\//i.test(t)){ setResult(t); } else { showToast('Clipboard has no link.'); }
+          }catch{ showToast('Unable to read clipboard.'); }
+        });
+        backRow.append(backBtn, pasteBtn);
+
+        wrap.append(p, box, reader, divider, resultBar, backRow);
+
+        app.append(header, wrap);
+
+        let scanner = null;
+        let lastText = '';
+
+        function setResult(text){
+          lastText = String(text||'');
+          resText.textContent = lastText;
+          const looksLink = /^https?:\/\//i.test(lastText);
+          openBtn.disabled = !looksLink;
+          copyBtn.disabled = !lastText;
+          if (looksLink){
+            // If it looks like our MINI/view link, offer instant open
+            try{
+              const u = new URL(lastText);
+              if (/\/MINI\/view\/index\.html$/i.test(u.pathname) && u.search) {
+                showToast('Ready — opening…');
+                setTimeout(()=>{ location.href = lastText; }, 650);
+              }
+            }catch{}
+          }
+        }
+
+        openBtn.addEventListener('click', ()=> { if (lastText) location.href = lastText; });
+        copyBtn.addEventListener('click', ()=> { if (lastText) copyText(lastText); });
+
+        // Start scanner
+        if (window.Html5QrcodeScanner){
+          const config = {
+            fps: 10,
+            qrbox: (vw, vh)=> {
+              const size = Math.min(280, Math.round(Math.min(vw, vh) * 0.7));
+              return { width:size, height:size };
+            },
+            rememberLastUsedCamera: true,
+            showTorchButtonIfSupported: true,
+            showZoomSliderIfSupported: true
+          };
+          scanner = new Html5QrcodeScanner('reader', config, /* verbose */ false);
+          scanner.render(onScanSuccess, onScanError);
+        } else {
+          const fallback = document.createElement('div');
+          fallback.className = 'notice';
+          fallback.textContent = 'Scanner failed to load. Please paste a link instead.';
+          box.replaceWith(fallback);
+        }
+
+        function onScanSuccess(decodedText, _decodedResult){
+          if (!decodedText || decodedText === lastText) return;
+          setResult(decodedText);
+        }
+        function onScanError(_error){ /* ignore continuous errors for UX */ }
+      }
+
+      // Router
+      if (hasQuery){
+        renderContentView();
       } else {
-        state.entries.forEach((e, i) => grid.appendChild(card(e, i)));
-        app.appendChild(grid);
+        renderScannerView(false);
       }
-
-      // Composer
-      app.appendChild(composer());
-
-      // Update header controls
-      $('#openAllBtn').textContent = state.entries.length ? 'Open first' : 'Open first';
-      $('#openAllBtn').disabled = !state.entries.length || isExpired(state.exp);
-      $('#openAllBtn').onclick = () => {
-        const first = state.entries.find(e => !isExpired(e.exp || state.exp));
-        if (!first) { showToast('No valid entry to open', 'warn'); return; }
-        openViewer(first.url);
-      };
-
-      $('#shareBtn').onclick = () => {
-        // If entries came from data, preserve it; else pack minimal share
-        const url = new URL(location.href);
-        url.search = '';
-        // prefer data pack to avoid long URLs
-        const payload = state.entries.map(x => ({ title:x.title, pin:x.pin, url:x.url, exp:x.exp || '' }));
-        const b64 = utf8ToB64(JSON.stringify(payload));
-        if (b64) url.searchParams.set('data', b64);
-        if (state.from) url.searchParams.set('from', state.from);
-        if (state.exp) url.searchParams.set('exp', state.exp);
-        navigator.share?.({ url: url.toString(), title: 'Camcookie MINI' })
-          .catch(() => copy(url.toString()).then(ok => showToast(ok ? 'Share link copied' : 'Copy failed', ok ? 'ok':'bad')));
-      };
-
-      // Badges
-      $('#fromBadge').textContent = `from: ${state.from || '—'}`;
-      const expLabel = state.exp ? `${state.exp} • ${countdown(state.exp)}` : '—';
-      $('#expBadge').textContent = `exp: ${expLabel}`;
-    }
-
-    // ------------- Theme popup wiring
-    $('#themeSelect').addEventListener('change', e => applyTheme(e.target.value));
-    $('#reducedMotion').addEventListener('change', e => {
-      document.documentElement.style.scrollBehavior = e.target.checked ? 'auto' : 'smooth';
-      showToast(e.target.checked ? 'Motion reduced' : 'Motion enabled', 'ok');
-    });
-
-    // ------------- Bootstrap
-    (function init() {
-      applyTheme(state.theme);
-
-      state.from = (qs.get('from') || '').trim();
-      state.exp = (qs.get('exp') || '').trim();
-
-      // Load entries: ?data=... (base64 JSON) takes precedence, else multiple ?k=
-      const dataParam = qs.get('data');
-      if (dataParam) {
-        state.entries = parseDataParam(dataParam);
-      }
-      if (!state.entries.length) {
-        const ks = qs.getAll('k');
-        state.entries = ks.map(parseKParam).filter(Boolean);
-      }
-
-      // Auto-open first if fs=1 and not expired
-      const fs = qs.get('fs');
-      if (fs === '1' && state.entries.length) {
-        const first = state.entries[0];
-        if (!isExpired(first.exp || state.exp)) {
-          setTimeout(() => openViewer(first.url), 50);
-        }
-      }
-
-      render();
     })();
   </script>
 </body>
