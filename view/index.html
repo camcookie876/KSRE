@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>view — Camcookie MINI </title>
+  <title>Camcookie — MINI/view</title>
   <meta name="color-scheme" content="light only" />
   <style>
     :root{
@@ -64,16 +64,14 @@
       background:var(--card); border-radius:12px; border:1px solid rgba(0,0,0,.06); box-shadow:var(--shadow);
       padding:14px;
     }
-    .scanBox{ width:100%; max-width:520px; margin:12px auto; }
+    .scanBox{ width:100%; max-width:520px; margin:12px auto; position:relative; }
     #reader{ border-radius:12px; overflow:hidden; }
     .small{ font-size:.92rem; }
     .divider{ height:1px; background:var(--border); margin:12px 0; }
     /* Utilities */
     .right{ margin-left:auto; }
-  </style>
 
-  <!-- Viewer overlay styles -->
-  <style>
+    /* Inline viewer overlay */
     .viewer {
       position: fixed;
       inset: 0;
@@ -104,10 +102,21 @@
       right: 16px;
       z-index: 2;
     }
+
+    /* Scanner video */
+    .cam {
+      width: 100%;
+      border-radius: 12px;
+      background: #000;
+    }
+    .overlayBox {
+      position:absolute; inset:0; pointer-events:none; border-radius:12px;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,.25) inset, 0 0 0 2px rgba(255,255,255,.35) inset;
+    }
   </style>
 
-  <!-- QR scanning library -->
-  <script src="https://unpkg.com/html5-qrcode@2.3.9/html5-qrcode.min.js"></script>
+  <!-- QR decode library (video-based scanning) -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 </head>
 <body>
   <div class="wrap" id="app" aria-live="polite"></div>
@@ -129,7 +138,7 @@
       const app = document.getElementById('app');
       const toast = document.getElementById('toast');
 
-      // Viewer refs
+      // Inline viewer refs
       const viewer = document.getElementById('viewer');
       const viewerFrame = document.getElementById('viewerFrame');
       const viewerExit = document.getElementById('viewerExit');
@@ -162,9 +171,8 @@
         showToast._t = setTimeout(()=>toast.classList.remove('show'), ms);
       };
       const copyText = async (text)=>{ try{ await navigator.clipboard.writeText(text); showToast('Copied.'); }catch{} };
-      const openSafe = (url)=>window.open(url, '_blank', 'noopener');
 
-      // Inline viewer helpers
+      // Inline iframe viewer
       const sanitizeUrl = (u)=>{
         try{
           const raw = String(u||'').trim();
@@ -269,7 +277,6 @@
           const openBtn = document.createElement('button');
           openBtn.className = 'btn';
           openBtn.textContent = 'Open link';
-          // Modified: open inline in sandboxed iframe
           openBtn.addEventListener('click', ()=> openInline(it.url));
 
           const copyLinkBtn = document.createElement('button');
@@ -360,7 +367,7 @@
         app.appendChild(renderFooter({from, exp: expParam, count: items.length}));
       }
 
-      // Scanner view
+      // Scanner view (video-based)
       function renderScannerView(openedFromContent=false){
         app.innerHTML = '';
         const header = document.createElement('header');
@@ -374,7 +381,18 @@
         const p = document.createElement('div'); p.className = 'muted';
         p.textContent = 'Align a QR code within the frame. On success, you can open or copy the link.';
         const box = document.createElement('div'); box.className = 'scanBox';
-        const reader = document.createElement('div'); reader.id = 'reader';
+
+        const video = document.createElement('video');
+        video.className = 'cam';
+        video.setAttribute('autoplay', '');
+        video.setAttribute('playsinline', '');
+        video.muted = true;
+
+        const overlay = document.createElement('div'); overlay.className = 'overlayBox';
+        overlay.setAttribute('aria-hidden','true');
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 640; canvas.height = 480; // will be resized to video dims
 
         const resultBar = document.createElement('div'); resultBar.className = 'row';
         const resText = document.createElement('div'); resText.className = 'muted small'; resText.textContent = '';
@@ -389,7 +407,9 @@
         const backRow = document.createElement('div'); backRow.className = 'row';
         const backBtn = document.createElement('button'); backBtn.className = 'btn ghost'; backBtn.textContent = 'Back';
         backBtn.addEventListener('click', ()=>{
-          if (openedFromContent) renderContentView(); else history.replaceState(null, '', location.pathname); renderScannerView(false);
+          stopCam();
+          if (openedFromContent) renderContentView();
+          else { history.replaceState(null, '', location.pathname); renderScannerView(false); }
         });
         const pasteBtn = document.createElement('button'); pasteBtn.className = 'btn ghost'; pasteBtn.textContent = 'Paste link';
         pasteBtn.addEventListener('click', async ()=>{
@@ -400,12 +420,23 @@
         });
         backRow.append(backBtn, pasteBtn);
 
-        wrap.append(p, box, reader, divider, resultBar, backRow);
-
+        box.append(video, overlay);
+        wrap.append(p, box, divider, resultBar, backRow);
         app.append(header, wrap);
 
-        let scanner = null;
+        let stream = null;
+        let rafId = 0;
         let lastText = '';
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        function stopCam(){
+          if (rafId) cancelAnimationFrame(rafId);
+          rafId = 0;
+          if (stream){
+            stream.getTracks().forEach(t => t.stop());
+            stream = null;
+          }
+        }
 
         function setResult(text){
           lastText = String(text||'');
@@ -414,11 +445,11 @@
           openBtn.disabled = !looksLink;
           copyBtn.disabled = !lastText;
           if (looksLink){
-            // If it looks like our MINI/view link, offer instant open
             try{
               const u = new URL(lastText);
               if (/\/MINI\/view\/index\.html$/i.test(u.pathname) && u.search) {
                 showToast('Ready — opening…');
+                stopCam();
                 setTimeout(()=>{ location.href = lastText; }, 650);
               }
             }catch{}
@@ -428,32 +459,43 @@
         openBtn.addEventListener('click', ()=> { if (lastText) location.href = lastText; });
         copyBtn.addEventListener('click', ()=> { if (lastText) copyText(lastText); });
 
-        // Start scanner
-        if (window.Html5QrcodeScanner){
-          const config = {
-            fps: 10,
-            qrbox: (vw, vh)=> {
-              const size = Math.min(280, Math.round(Math.min(vw, vh) * 0.7));
-              return { width:size, height:size };
-            },
-            rememberLastUsedCamera: true,
-            showTorchButtonIfSupported: true,
-            showZoomSliderIfSupported: true
-          };
-          scanner = new Html5QrcodeScanner('reader', config, /* verbose */ false);
-          scanner.render(onScanSuccess, onScanError);
-        } else {
-          const fallback = document.createElement('div');
-          fallback.className = 'notice';
-          fallback.textContent = 'Scanner failed to load. Please paste a link instead.';
-          box.replaceWith(fallback);
+        async function startCam(){
+          try{
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: { ideal: 'environment' } , width: { ideal: 1280 }, height: { ideal: 720 } },
+              audio: false
+            });
+            video.srcObject = stream;
+            await video.play();
+
+            // Size canvas to video
+            const vw = video.videoWidth || 640;
+            const vh = video.videoHeight || 480;
+            canvas.width = vw;
+            canvas.height = vh;
+
+            const scan = ()=>{
+              if (!video.videoWidth){ rafId = requestAnimationFrame(scan); return; }
+              try{
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = window.jsQR ? jsQR(img.data, img.width, img.height, { inversionAttempts: 'attemptBoth' }) : null;
+                if (code && code.data && code.data !== lastText){
+                  setResult(code.data);
+                }
+              }catch{}
+              rafId = requestAnimationFrame(scan);
+            };
+            scan();
+          }catch(e){
+            const fallback = document.createElement('div');
+            fallback.className = 'notice';
+            fallback.textContent = 'Camera access failed. Please paste a link instead.';
+            box.replaceWith(fallback);
+          }
         }
 
-        function onScanSuccess(decodedText, _decodedResult){
-          if (!decodedText || decodedText === lastText) return;
-          setResult(decodedText);
-        }
-        function onScanError(_error){ /* ignore continuous errors for UX */ }
+        startCam();
       }
 
       // Router
