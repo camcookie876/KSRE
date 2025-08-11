@@ -1,10 +1,9 @@
-<!-- Filename: /MINI/view/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>View Page - Camcookie MINI</title>
+  <title>Camcookie — MINI/view</title>
   <meta name="color-scheme" content="light only" />
   <meta id="meta-theme" name="theme-color" content="#0ea5e9" />
   <style>
@@ -12,8 +11,7 @@
       --bg:#f7f7f8; --card:#ffffff; --text:#1f2937; --muted:#6b7280;
       --accent:#0ea5e9; --accent-2:#22c55e; --danger:#ef4444;
       --warn-bg:#fff3cd; --warn-border:#ffc107; --border:#e5e7eb;
-      --shadow:0 10px 24px rgba(0,0,0,.06); --good:#16a34a;
-      --overlay: rgba(0,0,0,.62);
+      --shadow:0 10px 24px rgba(0,0,0,.06); --good:#16a34a; --overlay: rgba(0,0,0,.62);
     }
     /* Themes */
     [data-theme="blue"]  { --bg:#f7f7f8; --card:#ffffff; --text:#1f2937; --muted:#6b7280; --accent:#0ea5e9; --accent-2:#22c55e; }
@@ -61,20 +59,13 @@
       opacity:0; transform:translateY(-8px); transition:all .22s ease; max-width:420px; z-index:50;
     }
     .toast.show{ opacity:1; transform:translateY(0); }
-    .notice{
-      margin:12px 0; padding:12px; border-radius:12px; border:1px dashed #f59e0b; background:#fffaf0; color:#92400e;
-    }
-    .expired{
-      border:1px solid #fecaca; background:#fff1f2; color:#991b1b;
-    }
+    .notice{ margin:12px 0; padding:12px; border-radius:12px; border:1px dashed #f59e0b; background:#fffaf0; color:#92400e; }
+    .expired{ border:1px solid #fecaca; background:#fff1f2; color:#991b1b; }
     .footer{ margin-top:18px; color:var(--muted); font-size:.92rem; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
     .small{ font-size:.92rem; }
     .divider{ height:1px; background:var(--border); margin:12px 0; }
     /* Scanner */
-    .scanWrap{
-      background:var(--card); border-radius:12px; border:1px solid rgba(0,0,0,.06); box-shadow:var(--shadow);
-      padding:14px;
-    }
+    .scanWrap{ background:var(--card); border-radius:12px; border:1px solid rgba(0,0,0,.06); box-shadow:var(--shadow); padding:14px; }
     .scanBox{ width:100%; max-width:520px; margin:12px auto; }
     #reader{ border-radius:12px; overflow:hidden; }
     /* Fullscreen viewer */
@@ -83,8 +74,7 @@
     #viewer .backdrop{ position:absolute; inset:0; background:var(--overlay); }
     #viewer .chrome{
       position:absolute; inset:10px; border-radius:14px; overflow:hidden; display:flex; flex-direction:column; background:var(--card);
-      box-shadow:0 30px 80px rgba(0,0,0,.35), 0 0 0 2px rgba(0,0,0,.06);
-      border:1px solid rgba(0,0,0,.08);
+      box-shadow:0 30px 80px rgba(0,0,0,.35), 0 0 0 2px rgba(0,0,0,.06); border:1px solid rgba(0,0,0,.08);
     }
     #viewer .topbar{
       display:flex; align-items:center; gap:8px; padding:10px 12px; background:linear-gradient(90deg, var(--accent), var(--accent-2));
@@ -93,11 +83,31 @@
     #viewer .title{ font-weight:700; }
     #viewer .spacer{ flex:1 1 auto; }
     #viewer iframe{ flex:1 1 auto; width:100%; border:0; background:#fff; }
-    #viewer .exit{
-      background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.35); color:#fff; backdrop-filter: blur(4px);
-      padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:700;
-    }
+    #viewer .exit{ background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.35); color:#fff; backdrop-filter: blur(4px); padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:700; }
     @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+    /* Theme popup */
+    #themeModal{ position:fixed; inset:0; display:none; z-index:120; }
+    #themeModal.show{ display:block; }
+    #themeModal .bg{ position:absolute; inset:0; background:rgba(0,0,0,.55); }
+    #themeModal .panel{
+      position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+      width:min(480px, 92vw); background:var(--card); color:var(--text);
+      border-radius:16px; box-shadow:0 30px 80px rgba(0,0,0,.28); border:1px solid rgba(0,0,0,.08);
+      padding:16px;
+    }
+    #themeModal .head{ display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+    #themeModal .head h2{ margin:0; font-size:1.1rem; }
+    #themeModal .close{
+      margin-left:auto; background:transparent; border:0; cursor:pointer; padding:6px; border-radius:8px;
+    }
+    #themeSelect{
+      width:100%; padding:12px; border-radius:12px; border:1px solid var(--border); background:linear-gradient(180deg,#fff,#f7f7f7);
+      font-weight:700; letter-spacing:.2px;
+    }
+    .themeRow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+    .themeChip{ flex:1 1 120px; display:flex; align-items:center; gap:10px; padding:10px; border-radius:12px; border:1px solid var(--border); cursor:pointer; }
+    .swatch{ width:24px; height:24px; border-radius:7px; background:var(--accent); box-shadow: inset 0 0 0 2px rgba(0,0,0,.06); }
   </style>
   <script src="https://unpkg.com/html5-qrcode@2.3.9/html5-qrcode.min.js"></script>
 </head>
@@ -118,41 +128,100 @@
     </div>
   </div>
 
+  <!-- Theme popup modal -->
+  <div id="themeModal" aria-hidden="true">
+    <div class="bg"></div>
+    <div class="panel" role="dialog" aria-modal="true" aria-label="Theme selector">
+      <div class="head">
+        <h2>Choose a color theme</h2>
+        <button class="close" id="themeClose" aria-label="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6 6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <select id="themeSelect">
+        <option value="blue">Blue — calm</option>
+        <option value="green">Green — fresh</option>
+        <option value="pink">Pink — playful</option>
+        <option value="sunset">Sunset — warm</option>
+        <option value="slate">Slate — neutral</option>
+        <option value="cyber">Cyber — dark</option>
+      </select>
+      <div class="themeRow" id="themeRow"></div>
+    </div>
+  </div>
+
   <script>
     (function(){
       // ---------- Theme handling ----------
-      const COLOR_THEMES = ['blue','green','pink','sunset','slate','cyber'];
+      const COLOR_THEMES = [
+        { id:'blue',   accent:'#0ea5e9' },
+        { id:'green',  accent:'#22c55e' },
+        { id:'pink',   accent:'#ec4899' },
+        { id:'sunset', accent:'#fb923c' },
+        { id:'slate',  accent:'#64748b' },
+        { id:'cyber',  accent:'#38bdf8' }
+      ];
       const THEME_STORAGE_KEY = 'camcookie_theme';
       const metaTheme = document.getElementById('meta-theme');
 
       function hexFromCssVar(name){
         const val = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-        // Accept rgb(...) or hex; normalize to hex-ish where possible
         if (val.startsWith('#')) return val;
-        const m = val.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+        const m = val.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)/i);
         if (m){ const r=Number(m[1]).toString(16).padStart(2,'0'), g=Number(m[2]).toString(16).padStart(2,'0'), b=Number(m[3]).toString(16).padStart(2,'0'); return '#' + r + g + b; }
         return val || '#0ea5e9';
       }
       function applyTheme(name){
-        const next = COLOR_THEMES.includes(name) ? name : 'blue';
+        const valid = COLOR_THEMES.map(t=>t.id);
+        const next = valid.includes(name) ? name : 'blue';
         document.documentElement.setAttribute('data-theme', next);
         localStorage.setItem(THEME_STORAGE_KEY, next);
         const accentHex = hexFromCssVar('--accent');
         metaTheme.setAttribute('content', accentHex);
-        // Sync viewer chrome if open
         updateViewerChromeTheme(next, accentHex);
+        // Sync dropdown selection
+        const sel = document.getElementById('themeSelect'); if (sel) sel.value = next;
       }
-      function loadTheme(){
-        applyTheme(localStorage.getItem(THEME_STORAGE_KEY) || 'blue');
-      }
+      function loadTheme(){ applyTheme(localStorage.getItem(THEME_STORAGE_KEY) || 'blue'); }
+
+      // Theme keyboard shortcut: Ctrl+Alt+C (avoid DevTools)
       document.addEventListener('keydown', (e)=>{
-        if (e.ctrlKey && e.shiftKey && e.code === 'KeyC'){
-          const cur = document.documentElement.getAttribute('data-theme') || 'blue';
-          const idx = (COLOR_THEMES.indexOf(cur) + 1) % COLOR_THEMES.length;
-          applyTheme(COLOR_THEMES[idx]);
+        if (e.ctrlKey && e.altKey && e.code === 'KeyC'){
+          e.preventDefault();
+          toggleThemeModal(true);
         }
-        if (e.code === 'Escape') closeViewer();
+        if (e.code === 'Escape') {
+          closeViewer();
+          toggleThemeModal(false);
+        }
       });
+
+      // Theme modal
+      const themeModal = document.getElementById('themeModal');
+      const themeClose = document.getElementById('themeClose');
+      const themeSelect = document.getElementById('themeSelect');
+      const themeRow = document.getElementById('themeRow');
+
+      function toggleThemeModal(show){
+        themeModal.classList.toggle('show', !!show);
+        themeModal.setAttribute('aria-hidden', show ? 'false' : 'true');
+      }
+      themeClose.addEventListener('click', ()=> toggleThemeModal(false));
+      themeModal.querySelector('.bg').addEventListener('click', ()=> toggleThemeModal(false));
+      themeSelect.addEventListener('change', ()=> applyTheme(themeSelect.value));
+
+      // Build visual chips
+      COLOR_THEMES.forEach(t=>{
+        const chip = document.createElement('button');
+        chip.className = 'themeChip';
+        chip.innerHTML = '<span class="swatch"></span><span style="font-weight:700;text-transform:capitalize;">' + t.id + '</span>';
+        chip.addEventListener('click', ()=> applyTheme(t.id));
+        chip.style.setProperty('--accent', t.accent);
+        themeRow.appendChild(chip);
+      });
+
       loadTheme();
 
       // ---------- Utilities ----------
@@ -181,7 +250,7 @@
       };
       const copyText = async (text)=>{ try{ await navigator.clipboard.writeText(text); showToast('Copied.'); }catch{} };
 
-      // Parse k params: each is encodeURIComponent(title)|encodeURIComponent(pin)|encodeURIComponent(url)
+      // Parse k params
       function parseItems(){
         const entries = qs.getAll('k');
         const items = [];
@@ -211,7 +280,7 @@
       function sanitizeUrl(raw){
         const trimmed = String(raw||'').trim();
         if (!trimmed) return '';
-        const withProto = /^(https?:)?\/\//i.test(trimmed) ? trimmed : ('https://' + trimmed);
+        const withProto = /^(https?:)?\\/\\//i.test(trimmed) ? trimmed : ('https://' + trimmed);
         try{
           const u = new URL(withProto);
           if (!/^https?$/i.test(u.protocol.replace(':',''))) return '';
@@ -219,13 +288,21 @@
         }catch{ return ''; }
       }
 
+      function hexFromCssVarLocal(name){
+        const val = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        if (val.startsWith('#')) return val.replace('#','');
+        const m = val.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)/i);
+        if (m){ const r=Number(m[1]).toString(16).padStart(2,'0'), g=Number(m[2]).toString(16).padStart(2,'0'), b=Number(m[3]).toString(16).padStart(2,'0'); return (r+g+b); }
+        return '0ea5e9';
+      }
+
       function appendThemeParams(u){
         try{
           const url = new URL(u);
           const theme = document.documentElement.getAttribute('data-theme') || 'blue';
-          const accent = hexFromCssVar('--accent').replace('#','');
-          const bg = hexFromCssVar('--bg').replace('#','');
-          const text = hexFromCssVar('--text').replace('#','');
+          const accent = hexFromCssVarLocal('--accent');
+          const bg = hexFromCssVarLocal('--bg');
+          const text = hexFromCssVarLocal('--text');
           url.searchParams.set('cam_theme', theme);
           url.searchParams.set('cam_accent', accent);
           url.searchParams.set('cam_bg', bg);
@@ -235,47 +312,33 @@
       }
 
       function tryApplyThemeInsideFrame(){
-        // Only possible for same-origin modules
         try{
           const doc = viewerFrame.contentDocument || viewerFrame.contentWindow.document;
           if (!doc) return;
           doc.documentElement.setAttribute('data-theme', document.documentElement.getAttribute('data-theme') || 'blue');
           const style = doc.documentElement.style;
-          style.setProperty('--accent', getComputedStyle(document.documentElement).getPropertyValue('--accent'));
-          style.setProperty('--accent-2', getComputedStyle(document.documentElement).getPropertyValue('--accent-2'));
-          style.setProperty('--bg', getComputedStyle(document.documentElement).getPropertyValue('--bg'));
-          style.setProperty('--text', getComputedStyle(document.documentElement).getPropertyValue('--text'));
-          style.setProperty('--muted', getComputedStyle(document.documentElement).getPropertyValue('--muted'));
-        }catch{
-          // Cross-origin: cannot inject. We already themed the chrome and passed params.
-        }
+          ['--accent','--accent-2','--bg','--text','--muted'].forEach(v=>{
+            style.setProperty(v, getComputedStyle(document.documentElement).getPropertyValue(v));
+          });
+        }catch{}
       }
 
-      function updateViewerChromeTheme(themeName, accentHex){
-        // Topbar already uses CSS vars; nothing to do other than maybe update meta tag (done in applyTheme)
-        // Could add theme-specific tweaks here if needed.
-      }
+      function updateViewerChromeTheme(_name, _accentHex){ /* topbar uses vars already */ }
 
       function openInlineViewer(rawUrl){
         const safeUrl = sanitizeUrl(rawUrl);
         if (!safeUrl) return showToast('Invalid link.');
         const themedUrl = appendThemeParams(safeUrl);
-        try{
-          viewerTitle.textContent = (new URL(themedUrl)).hostname;
-        }catch{
-          viewerTitle.textContent = 'Loading…';
-        }
+        try{ viewerTitle.textContent = (new URL(themedUrl)).hostname; }catch{ viewerTitle.textContent = 'Loading…'; }
         viewerFrame.src = themedUrl;
         viewer.classList.add('show');
         viewer.setAttribute('aria-hidden', 'false');
-        // Attempt theme injection for same-origin on load
         viewerFrame.onload = tryApplyThemeInsideFrame;
       }
       function closeViewer(){
         if (!viewer.classList.contains('show')) return;
         viewer.classList.remove('show');
         viewer.setAttribute('aria-hidden', 'true');
-        // Clear src to stop audio/video
         viewerFrame.src = '';
       }
 
@@ -291,40 +354,35 @@
         const expBadge = document.createElement('span'); expBadge.className = 'badge ' + (expired ? 'exp' : 'good');
         expBadge.textContent = expired ? ('Expired: ' + fmtDateLong(exp||'')) : ('Expires: ' + fmtDateLong(exp||'—'));
         const cnt = document.createElement('span'); cnt.className = 'badge'; cnt.textContent = (count||0) + ' item' + ((count||0)===1?'':'s');
-        right.append(src, expBadge, cnt);
 
+        // Theme button
+        const themeBtn = document.createElement('button'); themeBtn.className = 'btn ghost'; themeBtn.textContent = 'Theme';
+        themeBtn.title = 'Open theme selector (Ctrl+Alt+C)';
+        themeBtn.addEventListener('click', ()=> toggleThemeModal(true));
+
+        right.append(src, expBadge, cnt, themeBtn);
         header.append(left, right);
         return header;
       }
 
       function renderCards(items, expired){
-        const grid = document.createElement('div');
-        grid.className = 'grid';
+        const grid = document.createElement('div'); grid.className = 'grid';
         items.forEach((it, i)=>{
-          const card = document.createElement('div');
-          card.className = 'card';
-
-          const title = document.createElement('div');
-          title.className = 'title';
-          title.textContent = it.title || ('Item ' + (i+1));
+          const card = document.createElement('div'); card.className = 'card';
+          const title = document.createElement('div'); title.className = 'title'; title.textContent = it.title || ('Item ' + (i+1));
 
           const row1 = document.createElement('div'); row1.className = 'row';
           const pin = document.createElement('div'); pin.className = 'pin';
           pin.innerHTML = '<strong>PIN:</strong> <span>' + (String(it.pin||'—')) + '</span>';
-
           const copyPinBtn = document.createElement('button'); copyPinBtn.className = 'btn ghost'; copyPinBtn.textContent = 'Copy PIN';
           copyPinBtn.addEventListener('click', ()=> copyText(String(it.pin||'')));
-
           row1.append(pin, copyPinBtn);
 
           const row2 = document.createElement('div'); row2.className = 'row';
-
           const openBtn = document.createElement('button'); openBtn.className = 'btn'; openBtn.textContent = 'Open link';
           openBtn.addEventListener('click', ()=> openInlineViewer(it.url));
-
           const copyLinkBtn = document.createElement('button'); copyLinkBtn.className = 'btn secondary'; copyLinkBtn.textContent = 'Copy link';
           copyLinkBtn.addEventListener('click', ()=> copyText(String(it.url||'')));
-
           const copyAllBtn = document.createElement('button'); copyAllBtn.className = 'btn ghost'; copyAllBtn.textContent = 'Copy title+PIN';
           copyAllBtn.addEventListener('click', ()=> copyText(`${it.title} — PIN: ${it.pin}`));
 
@@ -343,15 +401,13 @@
       }
 
       function renderExpiredNotice(exp){
-        const n = document.createElement('div');
-        n.className = 'notice expired';
+        const n = document.createElement('div'); n.className = 'notice expired';
         n.textContent = `This collection expired on ${fmtDateLong(exp||'')}. You can still copy details, but links are disabled.`;
         return n;
       }
 
       function renderFooter({from, exp, count}){
-        const f = document.createElement('div');
-        f.className = 'footer';
+        const f = document.createElement('div'); f.className = 'footer';
         const a = document.createElement('div'); a.textContent = 'Need to scan another code?';
         const toScan = document.createElement('button'); toScan.className = 'btn ghost'; toScan.textContent = 'Open scanner';
         toScan.addEventListener('click', ()=> renderScannerView(true));
@@ -416,7 +472,7 @@
         pasteBtn.addEventListener('click', async ()=>{
           try{
             const t = await navigator.clipboard.readText();
-            if (t && /^https?:\/\//i.test(t)){ setResult(t); } else { showToast('Clipboard has no link.'); }
+            if (t && /^https?:\\/\\//i.test(t)){ setResult(t); } else { showToast('Clipboard has no link.'); }
           }catch{ showToast('Unable to read clipboard.'); }
         });
         backRow.append(backBtn, pasteBtn);
@@ -430,13 +486,13 @@
         function setResult(text){
           lastText = String(text||'');
           resText.textContent = lastText;
-          const looksLink = /^https?:\/\//i.test(lastText);
+          const looksLink = /^https?:\\/\\//i.test(lastText);
           openBtn.disabled = !looksLink;
           copyBtn.disabled = !lastText;
           if (looksLink){
             try{
               const u = new URL(lastText);
-              if (/\/MINI\/view\/index\.html$/i.test(u.pathname) && u.search) {
+              if (/\\/MINI\\/view\\/index\\.html$/i.test(u.pathname) && u.search) {
                 showToast('Ready — opening…');
                 setTimeout(()=>{ location.href = lastText; }, 650);
               }
@@ -465,10 +521,10 @@
       }
 
       // ---------- Router ----------
-      if (hasQuery) renderContentView();
+      if (Array.from(qs.keys()).length > 0) renderContentView();
       else renderScannerView(false);
 
-      // Expose for other modules (optional)
+      // Expose for other modules
       window.openInlineViewer = openInlineViewer;
       window.closeViewer = closeViewer;
     })();
