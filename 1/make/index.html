@@ -62,7 +62,8 @@
     }
     #options input[type="number"],
     #options select,
-    #options input[type="color"] {
+    #options input[type="color"],
+    #options input[type="file"] {
       margin-top: 0.25rem;
       padding: 0.4rem;
       border: none;
@@ -107,15 +108,13 @@
       opacity: 1;
       transform: translateY(0);
     }
-    canvas {
+    #qrWrapper {
       margin: 1rem 0;
-      transition: transform 0.4s ease, opacity 0.4s ease;
       opacity: 0;
-      transform: scale(0.8);
+      transition: opacity 0.5s ease;
     }
-    canvas.visible {
+    #qrWrapper.visible {
       opacity: 1;
-      transform: scale(1);
     }
     iframe {
       width: 100%;
@@ -150,6 +149,7 @@
       transform: translateX(-50%) scale(1);
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
 </head>
 <body>
   <h1>Camcookie Code Maker</h1>
@@ -176,6 +176,16 @@
         <option value="H">H – 30%</option>
       </select>
     </label>
+    <label>Edge Style
+      <select id="qrStyle">
+        <option value="square">Square</option>
+        <option value="dots">Dots</option>
+        <option value="rounded">Rounded</option>
+      </select>
+    </label>
+    <label>Upload Logo
+      <input type="file" id="logoUpload" accept="image/*" />
+    </label>
   </div>
 
   <div class="buttons">
@@ -185,27 +195,30 @@
   </div>
 
   <div id="linkBox"></div>
-  <canvas id="qrCanvas"></canvas>
+  <div id="qrWrapper"></div>
   <iframe id="preview" sandbox="allow-scripts"></iframe>
   <div id="message"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
   <script>
-    const codeInput  = document.getElementById('codeInput');
-    const sizeInput  = document.getElementById('qrSize');
-    const marginInput= document.getElementById('qrMargin');
-    const darkInput  = document.getElementById('qrDark');
-    const lightInput = document.getElementById('qrLight');
-    const eccSelect  = document.getElementById('qrECC');
+    const codeInput    = document.getElementById('codeInput');
+    const sizeInput    = document.getElementById('qrSize');
+    const marginInput  = document.getElementById('qrMargin');
+    const darkInput    = document.getElementById('qrDark');
+    const lightInput   = document.getElementById('qrLight');
+    const eccSelect    = document.getElementById('qrECC');
+    const qrStyle      = document.getElementById('qrStyle');
+    const logoUpload   = document.getElementById('logoUpload');
 
-    const generateBtn= document.getElementById('generateBtn');
-    const copyBtn    = document.getElementById('copyBtn');
-    const downloadBtn= document.getElementById('downloadBtn');
+    const generateBtn  = document.getElementById('generateBtn');
+    const copyBtn      = document.getElementById('copyBtn');
+    const downloadBtn  = document.getElementById('downloadBtn');
 
-    const linkBox    = document.getElementById('linkBox');
-    const qrCanvas   = document.getElementById('qrCanvas');
-    const preview    = document.getElementById('preview');
-    const message    = document.getElementById('message');
+    const linkBox      = document.getElementById('linkBox');
+    const qrWrapper    = document.getElementById('qrWrapper');
+    const preview      = document.getElementById('preview');
+    const message      = document.getElementById('message');
+
+    let qr; // QRCodeStyling instance
 
     function showMsg(text) {
       message.textContent = text;
@@ -219,29 +232,44 @@
       const encoded = encodeURIComponent(raw);
       const url = `${location.origin}/MINI/1/view/?code=${encoded}`;
 
-      // show link
       linkBox.textContent = url;
       linkBox.classList.add('visible');
 
-      // preview code
       preview.srcdoc = raw;
       preview.classList.add('visible');
 
-      // generate QR
-      const options = {
+      // Build QRCodeStyling config
+      qr = new QRCodeStyling({
         width: Number(sizeInput.value),
+        height: Number(sizeInput.value),
+        data: url,
         margin: Number(marginInput.value),
-        color: { dark: darkInput.value, light: lightInput.value },
-        errorCorrectionLevel: eccSelect.value
-      };
-      QRCode.toCanvas(qrCanvas, url, options, err => {
-        if (err) return showMsg('QR generation failed.');
-        qrCanvas.classList.add('visible');
+        dotsOptions: {
+          type: qrStyle.value,
+          color: darkInput.value
+        },
+        backgroundOptions: {
+          color: lightInput.value
+        },
+        imageOptions: {
+          crossOrigin: "anonymous",
+          margin: 4,
+          imageSize: 0.25
+        },
+        qrOptions: {
+          errorCorrectionLevel: eccSelect.value
+        }
       });
+
+      qrWrapper.innerHTML = '';
+      qr.append(qrWrapper);
+      qrWrapper.classList.add('visible');
     }
 
+    // Generate button
     generateBtn.addEventListener('click', generateAll);
 
+    // Copy link
     copyBtn.addEventListener('click', () => {
       const txt = linkBox.textContent;
       if (!txt) return showMsg('Nothing to copy.');
@@ -250,12 +278,30 @@
         .catch(() => showMsg('Copy failed.'));
     });
 
+    // Download QR
     downloadBtn.addEventListener('click', () => {
-      if (!qrCanvas.toDataURL) return showMsg('No QR to download.');
-      const a = document.createElement('a');
-      a.href = qrCanvas.toDataURL();
-      a.download = 'camcookie-qr.png';
-      a.click();
+      if (!qr) return showMsg('Nothing to download.');
+      qr.download({ name: 'camcookie-qr', extension: 'png' });
+    });
+
+    // Edge style change live
+    qrStyle.addEventListener('change', () => {
+      if (!qr) return;
+      qr.update({ dotsOptions: { type: qrStyle.value } });
+      qr.append(qrWrapper);
+    });
+
+    // Logo upload
+    logoUpload.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file || !qr) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        qr.update({ image: reader.result });
+        qr.append(qrWrapper);
+        showMsg('Logo added.');
+      };
+      reader.readAsDataURL(file);
     });
   </script>
 </body>
